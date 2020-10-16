@@ -1,0 +1,23 @@
+name: docker-companion
+version: 0.1.0
+
+authors:
+  - your-name-here <your-email-here>
+
+targets:
+  docker-companion:
+    main: src/docker-companion.cr
+
+crystal: 0.35.0
+
+dependencies:
+  caridina:
+    path: /home/amorignot/PycharmProjects/perso/caridina
+    version: ~>0.1.1
+
+development_dependencies:
+    ameba:
+        github: crystal-ameba/ameba
+        version: ~>0.13.2
+
+license: MIT
