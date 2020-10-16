@@ -2,7 +2,7 @@ require "caridina"
 
 require "option_parser"
 
-module Docker::Companion
+module Companion
   VERSION = "0.1.0"
 
   def self.run : Nil
@@ -29,4 +29,4 @@ module Docker::Companion
   end
 end
 
-Docker::Companion.run
+# Companion.run
