@@ -6,5 +6,5 @@ shards:
 
   caridina:
     git: https://github.com/erdnaxeli/caridina.git
-    version: 0.1.1
+    version: 0.1.2
 
