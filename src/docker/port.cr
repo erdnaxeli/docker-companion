@@ -16,8 +16,8 @@ class Companion::Docker::Port
   def initialize(@private_port, @type, @ip = nil, @public_port = nil)
   end
 
-  json_property ip, IP, String?
-  json_property private_port, Int16
-  json_property public_port, Int16?
-  json_property type, PortType
+  json_property "IP", ip : String?
+  json_property private_port : Int16
+  json_property public_port : Int16?
+  json_property type : PortType
 end
