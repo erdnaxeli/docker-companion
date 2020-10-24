@@ -32,8 +32,11 @@ module Companion
     c = Docker::Client.new(Docker::Client::Config.new)
     puts c.containers(true)
 
-    puts "Creating bash container"
+    c.pull_image("bash") do |r|
+      puts r
+    end
 
+    puts "Creating bash container"
     o = Docker::CreateContainerOptions.new
     o.image = "bash"
     r = c.create_container(o)
