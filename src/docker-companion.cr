@@ -37,8 +37,7 @@ module Companion
     o = Docker::CreateContainerOptions.new
     o.image = "bash"
     r = c.create_container(o)
-    puts r.status_code
-    puts r.body
+    puts r.id, r.warnings, r.message
     puts c.containers
   end
 end

@@ -3,7 +3,7 @@ require "./macro"
 class Companion::Docker::Port
   include JSON::Serializable
 
-  enum PortType
+  enum Type
     Tcp
     Udp
     Sctp
@@ -19,5 +19,5 @@ class Companion::Docker::Port
   json_property "IP", ip : String?
   json_property private_port : Int16
   json_property public_port : Int16?
-  json_property type : PortType
+  json_property type : Type
 end

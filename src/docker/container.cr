@@ -17,8 +17,63 @@ end
 class Companion::Docker::CreateContainerOptions
   include JSON::Serializable
 
+  class ExposedPorts
+    @ports = Array(Tuple(Int16, Port::Type)).new
+
+    def add_port(port : Int16, type = Port::Type::Tcp) : Nil
+      @ports << {port, type}
+    end
+
+    def to_json(json)
+      json.object do
+        @ports.each do |t|
+          json.field("#{t[0]}/#{t[1].to_s.downcase}") { json.object { } }
+        end
+      end
+    end
+  end
+
+  class Env
+    @env = Hash(String, String).new
+
+    def <<(t)
+      @env[t[0]] = t[1]
+    end
+
+    def to_json(json)
+      json.array do
+        @env.each do |key, value|
+          json.string("#{key.upcase}=#{value}")
+        end
+      end
+    end
+  end
+
+  class Volumes
+    @volumes = Array(String).new
+
+    def <<(volume)
+      @volumes << volume
+    end
+
+    def to_json(json)
+      json.object do
+        @volumes.each do |volume|
+          json.field(volume) { json.object {} }
+        end
+      end
+    end
+  end
+
   def initialize
   end
 
-  json_property image : String = ""
+  json_property hostname = ""
+  json_property user = ""
+  json_property exposed_ports = ExposedPorts.new
+  json_property env = Env.new
+  json_property cmd = Array(String).new
+  json_property image = ""
+  json_property volumes = Volumes.new
+  json_property labels = Hash(String, String).new
 end
