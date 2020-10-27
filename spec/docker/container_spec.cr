@@ -236,3 +236,25 @@ describe Companion::Docker::CreateContainerOptions::Volumes do
     str.should eq(%{{"/var/run":{},"/home":{}}})
   end
 end
+
+describe Companion::Docker::CreateContainerOptions::HostConfig do
+  it "serializes to json" do
+    Companion::Docker::CreateContainerOptions::HostConfig.new.to_json
+  end
+end
+
+describe Companion::Docker::CreateContainerOptions::HostConfig::Mount do
+  it "serializes to json" do
+    Companion::Docker::CreateContainerOptions::HostConfig::Mount.new.to_json
+  end
+end
+
+describe Companion::Docker::CreateContainerOptions::HostConfig::Mount::Type do
+  it "serializes to json" do
+    str = JSON.build do |json|
+      Companion::Docker::CreateContainerOptions::HostConfig::Mount::Type::Bind.to_json(json)
+    end
+
+    str.should eq(%("bind"))
+  end
+end

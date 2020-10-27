@@ -59,10 +59,41 @@ class Companion::Docker::CreateContainerOptions
     def to_json(json)
       json.object do
         @volumes.each do |volume|
-          json.field(volume) { json.object {} }
+          json.field(volume) { json.object { } }
         end
       end
     end
+  end
+
+  class HostConfig
+    include JSON::Serializable
+
+    class Mount
+      include JSON::Serializable
+
+      enum Type
+        Bind
+        Volume
+        Tmpfs
+        Npipe
+
+        def to_json(json)
+          json.string(self.to_s.downcase)
+        end
+      end
+
+      def initialize
+      end
+
+      json_property target = ""
+      json_property source = ""
+      json_property type = Type::Bind
+    end
+
+    def initialize
+    end
+
+    json_property mounts = Array(Mount).new
   end
 
   def initialize
@@ -76,4 +107,5 @@ class Companion::Docker::CreateContainerOptions
   json_property image = ""
   json_property volumes = Volumes.new
   json_property labels = Hash(String, String).new
+  json_property host_config = HostConfig.new
 end
