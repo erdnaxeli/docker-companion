@@ -39,9 +39,18 @@ module Companion
     puts "Creating bash container"
     o = Docker::CreateContainerOptions.new
     o.image = "bash"
+    mount = Docker::CreateContainerOptions::HostConfig::Mount.new
+    mount.target = "/tmp/home"
+    mount.source = "/home"
+    o.host_config.mounts << mount
+    o.cmd << "sleep" << "20"
     r = c.create_container(o)
     puts r.id, r.warnings, r.message
     puts c.containers
+
+    if id = r.id
+      c.start_container(id)
+    end
   end
 end
 
