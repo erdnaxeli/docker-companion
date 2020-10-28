@@ -1,7 +1,7 @@
 require "./file"
 
 class Companion::Docker::Compose
-  @services = Array(Service).new
+  getter services = Array(Service).new
 
   def self.from_yaml(yaml)
     new(yaml)
@@ -11,7 +11,7 @@ class Companion::Docker::Compose
     file = File.from_yaml(yaml)
 
     if file.version != "3.8"
-      raise "Unsuported version '#{file.version}'"
+      raise "Unsupported version '#{file.version}'"
     end
 
     file.services.each do |name, service|
@@ -22,15 +22,14 @@ end
 
 class Companion::Docker::Compose::Service
   getter name : String
-
-  @build : String?
-  @container_name : String?
-  @image : String?
-  @labels : Array(String)?
-  @networks : Array(String)?
-  @restart = RestartPolicy::No
-  @ports = Array(Port).new
-  @volumes = Array(Volume).new
+  getter build : String?
+  getter container_name : String?
+  getter image : String?
+  getter labels : Array(String)?
+  getter networks : Array(String)?
+  getter restart = RestartPolicy::No
+  getter ports = Array(Port).new
+  getter volumes = Array(Volume).new
 
   def initialize(@name, service : File::Service)
     @build = service.build
@@ -38,6 +37,10 @@ class Companion::Docker::Compose::Service
     @image = service.image
     @labels = service.labels
     @networks = service.networks
+
+    if @image.nil?
+      raise "You must provide an image name"
+    end
 
     if restart = service.restart
       @restart = case restart
@@ -76,17 +79,22 @@ enum Companion::Docker::Compose::Service::RestartPolicy
 end
 
 class Companion::Docker::Compose::Service::Port
-  getter host : Int16?
-  getter container : Int16
+  getter host_ip : String?
+  getter host_port : Int16?
+  getter container_port : Int16
 
   def initialize(str : String)
     parts = str.split(":")
     case parts.size
     when 1
-      @container = parts[0].to_i16
+      @container_port = parts[0].to_i16
     when 2
-      @host = parts[0].to_i16
-      @container = parts[1].to_i16
+      @host_port = parts[0].to_i16
+      @container_port = parts[1].to_i16
+    when 3
+      @host_ip = parts[0]
+      @host_port = parts[1].to_i16
+      @container_port = parts[2].to_i16
     else
       raise "Invalid port mapping description '#{str}'"
     end
