@@ -53,5 +53,3 @@ module Companion
     end
   end
 end
-
-Companion.run

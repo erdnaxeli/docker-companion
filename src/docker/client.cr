@@ -4,11 +4,7 @@ require "./container"
 require "./macro"
 require "../core_ext/http/client"
 
-class Companion::Docker::Client
-  struct Config
-    property socket = "/var/run/docker.sock"
-  end
-
+module Companion::Docker::Client
   struct CreateContainerResponse
     include JSON::Serializable
 
@@ -25,10 +21,31 @@ class Companion::Docker::Client
     property id : String?
   end
 
-  @client = HTTP::Client.new("localhost")
+  # Get a container's id.
+  #
+  # Returns nil if the container is not found.
+  abstract def get_container_id(name : String) : String?
 
-  def initialize(@config : Config)
-    connect
+  # Pull an image from Docker Hub.
+  #
+  # Yield `CreateImageResponse` objects.
+  abstract def pull_image(name, &block : CreateImageResponse ->)
+
+  # Start a container.
+  abstract def start_container(id : String) : Nil
+end
+
+class Companion::Docker::Client::Local
+  include Client
+
+  @client : HTTP::Client
+
+  struct Config
+    property socket = "/var/run/docker.sock"
+  end
+
+  def initialize(@config = Config.new)
+    @client = HTTP::Client.unix(@config.socket)
   end
 
   # Create a new container and return its id.
@@ -57,17 +74,23 @@ class Companion::Docker::Client
     Array(Container).from_json(response.body)
   end
 
+  def get_container_id(name : String) : String?
+    containers(true).each do |container|
+      container.names.each do |container_name|
+        if container_name == "/#{name}"
+          return container.id
+        end
+      end
+    end
+  end
+
   # Pull an image from dockerhub
-  def pull_image(name)
+  def pull_image(name, &block : CreateImageResponse ->)
     create_image(name, "https://hub.docker.com/") { |response| yield response }
   end
 
   # Start a container.
   def start_container(id : String) : Nil
     @client.post("/containers/#{id}/start")
-  end
-
-  private def connect
-    @client = HTTP::Client.unix(@config.socket)
   end
 end

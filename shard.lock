@@ -8,3 +8,7 @@ shards:
     git: https://github.com/erdnaxeli/caridina.git
     version: 0.1.2
 
+  webmock:
+    git: https://github.com/manastech/webmock.cr.git
+    version: 0.13.0
+
