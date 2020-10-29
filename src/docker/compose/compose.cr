@@ -24,7 +24,7 @@ class Companion::Docker::Compose::Service
   getter name : String
   getter build : String?
   getter container_name : String?
-  getter image : String?
+  getter image : String
   getter labels : Array(String)?
   getter networks : Array(String)?
   getter restart = RestartPolicy::No
@@ -34,11 +34,12 @@ class Companion::Docker::Compose::Service
   def initialize(@name, service : File::Service)
     @build = service.build
     @container_name = service.container_name
-    @image = service.image
     @labels = service.labels
     @networks = service.networks
 
-    if @image.nil?
+    if image = service.image
+      @image = image
+    else
       raise "You must provide an image name"
     end
 

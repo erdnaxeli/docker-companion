@@ -1,4 +1,6 @@
 require "./docker/client"
+require "./docker/compose"
+require "./manager"
 
 require "caridina"
 
