@@ -1,3 +1,4 @@
+require "./docker/client"
 require "./docker/compose"
 require "./project"
 
@@ -22,6 +23,30 @@ class Companion::Manager
     @projects[name] = Project.new(compose)
   end
 
+  # Creates missing containers for the project *name*.
+  #
+  # If the container are already there, it does not recreate them even if their
+  # config changed. It does not pull images neither, it must have been done with
+  # `#pull_images`.
+  def create(name : String)
+    project = get_project(name)
+
+    project.each_service do |service|
+      container_name = get_container_name(name, service)
+      options = Docker::CreateContainerOptions.new
+      options.image = service.image
+
+      @docker.create_container(options, container_name)
+    end
+  end
+
+  # Pull images, creates and starts containers for the project *name*.
+  def up(name : String)
+    pull_images(name)
+    create(name)
+    start(name)
+  end
+
   # Pull the docker images for the project *name*.
   def pull_images(name : String)
     project = get_project(name)
@@ -34,7 +59,7 @@ class Companion::Manager
   def start(name : String)
     project = get_project(name)
     project.each_service do |service|
-      container_name = service.container_name || "#{name}_#{service.name}"
+      container_name = get_container_name(name, service)
       container_id = @docker.get_container_id(container_name)
 
       if id = container_id
@@ -43,6 +68,10 @@ class Companion::Manager
         raise "Unknown container #{container_name}"
       end
     end
+  end
+
+  private def get_container_name(project_name, service)
+    service.container_name || "#{project_name}_#{service.name}"
   end
 
   private def get_project(name)

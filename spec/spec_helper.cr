@@ -11,6 +11,9 @@ services:
 class FakeDockerClient
   include Companion::Docker::Client
 
+  def create_container(options, name)
+  end
+
   def get_container_id(name : String) : String?
   end
 
