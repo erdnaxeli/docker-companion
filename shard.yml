@@ -6,7 +6,7 @@ authors:
 
 targets:
   docker-companion:
-    main: src/docker-companion.cr
+    main: src/main.cr
 
 crystal: 0.35.0
 

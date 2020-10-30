@@ -11,16 +11,17 @@ services:
 class FakeDockerClient
   include Companion::Docker::Client
 
-  def create_container(options, name)
+  def create_container(options, name) : CreateContainerResponse
+    CreateContainerResponse.from_json("{}")
   end
 
-  def get_container_id(name : String) : String?
+  def get_container_id(name) : String?
   end
 
   def pull_image(image, &block : Companion::Docker::Client::CreateImageResponse ->)
   end
 
-  def start_container(id : String) : Nil
+  def start_container(id) : Nil
   end
 end
 

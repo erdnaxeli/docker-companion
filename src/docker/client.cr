@@ -21,6 +21,8 @@ module Companion::Docker::Client
     property id : String?
   end
 
+  abstract def create_container(options : CreateContainerOptions, name : String) : CreateContainerResponse
+
   # Get a container's id.
   #
   # Returns nil if the container is not found.
