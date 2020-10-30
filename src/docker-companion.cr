@@ -4,12 +4,16 @@ require "./manager"
 
 require "caridina"
 
+require "dir"
 require "file"
 require "option_parser"
+require "path"
 require "yaml"
 
 module Companion
   VERSION = "0.1.0"
+
+  Log = ::Log.for(self)
 
   struct Config
     include YAML::Serializable
@@ -31,14 +35,36 @@ module Companion
   end
 
   def self.run : Nil
+    Log.info { "Read configuration" }
     config = read_config
 
+    Log.info { "Connecting to Matrix" }
     conn = Caridina::ConnectionImpl.new(
       config.matrix.homeserver,
       config.matrix.access_token,
     )
     channel = Channel(Caridina::Events::Sync).new
     conn.sync(channel)
+
+    Log.info { "Adding project" }
+    manager = Manager.new(Docker::Client::Local.new)
+
+    Dir.new(Dir.current).each_child do |name|
+      if !File.directory?(name)
+        next
+      end
+
+      path = Path[name] / "docker-compose.yaml"
+      if !File.file?(path)
+        next
+      end
+
+      Log.info &.emit("Add project", project_name: name)
+      content = File.read(path)
+      manager.add_project(name, content)
+      Log.info &.emit("Starting project", project_name: name)
+      manager.up(name)
+    end
 
     loop do
       sync = channel.receive
@@ -48,17 +74,5 @@ module Companion
         end
       end
     end
-
-    c = Manager.new(Docker::Client::Local.new)
-    c.add_project(
-      "bash",
-      %(
-        version: "3.8"
-        services:
-          test:
-            image: wardsco/sleep
-      )
-    )
-    c.up("bash")
   end
 end
