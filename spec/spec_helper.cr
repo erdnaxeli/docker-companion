@@ -11,7 +11,11 @@ services:
 class FakeDockerClient
   include Companion::Docker::Client
 
+  property create_container_calls = Array({options: Companion::Docker::CreateContainerOptions, name: String}).new
+
   def create_container(options, name) : CreateContainerResponse
+    @create_container_calls << {options: options, name: name}
+
     CreateContainerResponse.from_json("{}")
   end
 
@@ -22,6 +26,10 @@ class FakeDockerClient
   end
 
   def start_container(id) : Nil
+  end
+
+  def reset
+    @create_container_calls = Array({options: Companion::Docker::CreateContainerOptions, name: String}).new
   end
 end
 

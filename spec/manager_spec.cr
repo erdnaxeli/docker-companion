@@ -16,6 +16,37 @@ describe Companion::Manager do
     end
   end
 
+  it "can create containers for a project" do
+    manager = Companion::Manager.new(DOCKER)
+    manager.add_project(
+      "test",
+      %(
+        version: 3.8
+        services:
+          test:
+            image: bash:latest
+          tada:
+            image: python:3.8
+      ),
+    )
+    manager.create("test")
+
+    DOCKER.create_container_calls.size.should eq(2)
+    DOCKER.create_container_calls[0][:options].image.should eq("bash:latest")
+    DOCKER.create_container_calls[0][:name].should eq("test_test")
+    DOCKER.create_container_calls[1][:options].image.should eq("python:3.8")
+    DOCKER.create_container_calls[1][:name].should eq("test_tada")
+  end
+
+  it "raises when creating containers for an unknown project" do
+    manager = Companion::Manager.new(DOCKER)
+    manager.add_project("test", DOCKER_COMPOSE)
+
+    expect_raises(Exception, "Unknown project tada") do
+      manager.create("tada")
+    end
+  end
+
   it "raises when pulling images for an unknown project" do
     manager = Companion::Manager.new(DOCKER)
     manager.add_project("test", DOCKER_COMPOSE)
