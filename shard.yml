@@ -14,6 +14,9 @@ dependencies:
   caridina:
     github: erdnaxeli/caridina
     version: ~>0.1.2
+  parameters:
+    github: erdnaxeli/crystal-parameters
+    version: ~>1.0.1
 
 development_dependencies:
   ameba:

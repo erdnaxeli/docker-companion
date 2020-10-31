@@ -1,6 +1,7 @@
 require "json"
 
 require "./container"
+require "./exceptions"
 require "./macro"
 require "../core_ext/http/client"
 
@@ -16,7 +17,7 @@ module Companion::Docker::Client
   struct CreateImageResponse
     include JSON::Serializable
 
-    property status : String
+    property status : String?
     property progress : String?
     property id : String?
   end
@@ -53,13 +54,19 @@ class Companion::Docker::Client::Local
   # Create a new container and return its id.
   def create_container(options : CreateContainerOptions, name : String? = nil) : CreateContainerResponse
     route = name ? "/containers/create?name=#{name}" : "/containers/create"
-    puts options.to_json
-    response = @client.post(route, headers: HTTP::Headers{"Content-Type" => "application/json"}, body: options.to_json)
-    if !response.success?
-      raise response.body
+    raw_response = @client.post(route, headers: HTTP::Headers{"Content-Type" => "application/json"}, body: options.to_json)
+    response = CreateContainerResponse.from_json(raw_response.body)
+
+    if !raw_response.success?
+      case raw_response.status_code
+      when 409
+        raise ConflictException.new(response.message)
+      else
+        raise "Invalid status code #{raw_response.status_code}"
+      end
     end
 
-    CreateContainerResponse.from_json(response.body)
+    response
   end
 
   # Create an image and returns its id

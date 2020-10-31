@@ -3,6 +3,7 @@ require "./docker/compose"
 require "./manager"
 
 require "caridina"
+require "parameters"
 
 require "dir"
 require "file"
@@ -70,7 +71,20 @@ module Companion
       sync = channel.receive
       sync.room_events do |event|
         if (message = event.message?) && event.sender != conn.user_id && config.users.includes? event.sender
-          conn.send_message(event.room_id, message.body)
+          if parameters = Parameters.parse(message.body)
+            OptionParser.parse(parameters) do |parser|
+              parser.banner = "COMMAND [OPTIONS]"
+              parser.on("list", "list projects") do
+                msg = String.build do |str|
+                  str << "* " << manager.each_projects.join("\n *")
+                end
+
+                conn.send_message(event.room_id, msg)
+              end
+              parser.invalid_option { }
+              parser.unknown_args { conn.send_message(event.room_id, parser.to_s) }
+            end
+          end
         end
       end
     end

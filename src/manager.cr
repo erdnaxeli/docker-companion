@@ -5,10 +5,15 @@ require "./project"
 require "path"
 
 class Companion::Manager
+  @images = Hash(String, String?)
+  @tags = Hash(String, String)
   @projects = Hash(String, Project).new
 
   # Create an new Manager.
   def initialize(@docker : Docker::Client)
+    # Get images
+    # * fill @images
+    # * fill @tags
   end
 
   # Add a new project.
@@ -91,10 +96,20 @@ class Companion::Manager
     end
   end
 
+  # Return an iterator over the projects' names.
+  def each_projects
+    @projects.each_key
+  end
+
   # Pull images, creates and starts containers for the project *name*.
   def up(name : String)
     pull_images(name)
-    create(name)
+
+    begin
+      create(name)
+    rescue Docker::ConflictException
+    end
+
     start(name)
   end
 
