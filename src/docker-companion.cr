@@ -61,7 +61,7 @@ module Companion
 
       Log.info &.emit("Add project", project_name: name)
       content = File.read(path)
-      manager.add_project(name, content)
+      manager.add_project(name, content, Path[Dir.current] / name)
       Log.info &.emit("Starting project", project_name: name)
       manager.up(name)
     end

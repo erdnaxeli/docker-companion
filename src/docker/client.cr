@@ -53,7 +53,12 @@ class Companion::Docker::Client::Local
   # Create a new container and return its id.
   def create_container(options : CreateContainerOptions, name : String? = nil) : CreateContainerResponse
     route = name ? "/containers/create?name=#{name}" : "/containers/create"
+    puts options.to_json
     response = @client.post(route, headers: HTTP::Headers{"Content-Type" => "application/json"}, body: options.to_json)
+    if !response.success?
+      raise response.body
+    end
+
     CreateContainerResponse.from_json(response.body)
   end
 

@@ -128,4 +128,13 @@ class Companion::Docker::Compose::Service::Volume
       raise "Unknown volume mapping description '#{str}'"
     end
   end
+
+  # Converts relative paths to absolute paths in source
+  def fix_local_source(working_directory : Path) : Nil
+    if source = @source
+      if source.starts_with?(".")
+        @source = (working_directory / Path[source]).normalize.to_s
+      end
+    end
+  end
 end

@@ -95,3 +95,37 @@ describe Companion::Docker::CreateContainerOptions::HostConfig::Mount::Type do
     str.should eq(%("bind"))
   end
 end
+
+describe Companion::Docker::CreateContainerOptions::HostConfig::RestartPolicy::Name do
+  it "serializes No to json" do
+    str = JSON.build do |json|
+      Companion::Docker::CreateContainerOptions::HostConfig::RestartPolicy::Name::No.to_json(json)
+    end
+
+    str.should eq (%("no"))
+  end
+
+  it "serializes Always to json" do
+    str = JSON.build do |json|
+      Companion::Docker::CreateContainerOptions::HostConfig::RestartPolicy::Name::Always.to_json(json)
+    end
+
+    str.should eq (%("always"))
+  end
+
+  it "serializes OnFailure to json" do
+    str = JSON.build do |json|
+      Companion::Docker::CreateContainerOptions::HostConfig::RestartPolicy::Name::OnFailure.to_json(json)
+    end
+
+    str.should eq (%("on-failure"))
+  end
+
+  it "serializes UnlessStopped to json" do
+    str = JSON.build do |json|
+      Companion::Docker::CreateContainerOptions::HostConfig::RestartPolicy::Name::UnlessStopped.to_json(json)
+    end
+
+    str.should eq (%("unless-stopped"))
+  end
+end

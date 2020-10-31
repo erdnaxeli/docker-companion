@@ -90,10 +90,52 @@ class Companion::Docker::CreateContainerOptions
       json_property type = Type::Bind
     end
 
+    class PortBinding
+      include JSON::Serializable
+
+      def initialize
+      end
+
+      json_property host_ip = ""
+      json_property host_port = ""
+    end
+
+    class RestartPolicy
+      include JSON::Serializable
+
+      enum Name
+        No
+        Always
+        OnFailure
+        UnlessStopped
+
+        def to_json(json)
+          case self
+          when No
+            json.string("no")
+          when Always
+            json.string("always")
+          when OnFailure
+            json.string("on-failure")
+          when UnlessStopped
+            json.string("unless-stopped")
+          end
+        end
+      end
+
+      def initialize
+      end
+
+      property name = Name::No
+      json_property maximum_retry_count = 0
+    end
+
     def initialize
     end
 
     json_property mounts = Array(Mount).new
+    json_property port_bindings = Hash(String, Array(PortBinding)).new
+    json_property restart_policy = RestartPolicy.new
   end
 
   def initialize

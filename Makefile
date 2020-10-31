@@ -16,3 +16,5 @@ run:
 
 test:
 	crystal spec  --error-trace
+
+.PHONY: test
