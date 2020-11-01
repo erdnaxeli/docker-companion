@@ -47,9 +47,9 @@ module Companion
     channel = Channel(Caridina::Events::Sync).new
     conn.sync(channel)
 
-    Log.info { "Adding project" }
     manager = Manager.new(Docker::Client::Local.new)
 
+    Log.info { "Adding projects" }
     Dir.new(Dir.current).each_child do |name|
       if !File.directory?(name)
         next
@@ -72,18 +72,32 @@ module Companion
       sync.room_events do |event|
         if (message = event.message?) && event.sender != conn.user_id && config.users.includes? event.sender
           if parameters = Parameters.parse(message.body)
+            puts parameters
             OptionParser.parse(parameters) do |parser|
               parser.banner = "COMMAND [OPTIONS]"
-              parser.on("list", "list projects") do
+              parser.on("projects", "list projects") do
                 msg = String.build do |str|
-                  str << "* " << manager.each_projects.join("\n *")
+                  str << "* " << manager.each_projects.join("\n* ")
+                end
+
+                conn.send_message(event.room_id, msg)
+              end
+              parser.on("images", "list images") do
+                msg = String.build do |str|
+                  str << "* " << manager.images.map { |i| %(#{i.id} #{i.repo_tags.try &.join(", ")}) }.join("\n* ")
                 end
 
                 conn.send_message(event.room_id, msg)
               end
               parser.invalid_option { }
-              parser.unknown_args { conn.send_message(event.room_id, parser.to_s) }
+              parser.unknown_args do |args|
+                if args.size > 0 && args[0] == "help"
+                  conn.send_message(event.room_id, parser.to_s)
+                end
+              end
             end
+          else
+            conn.send_message(event.room_id, "Invalid command")
           end
         end
       end

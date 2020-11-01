@@ -24,6 +24,10 @@ class FakeDockerClient
   def get_container_id(name) : String?
   end
 
+  def images : Array(Companion::Docker::Image)
+    Array(Companion::Docker::Image).new
+  end
+
   def pull_image(image, &block : Companion::Docker::Client::CreateImageResponse ->)
   end
 

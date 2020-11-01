@@ -5,15 +5,19 @@ require "./project"
 require "path"
 
 class Companion::Manager
-  @images = Hash(String, String?)
-  @tags = Hash(String, String)
+  getter images = Array(Docker::Image).new
+
+  # A hash {image id => [images tags]}
+  @images_ids = Hash(String, Array(String)?).new
+  # A hash {image tag => [history of images ids]}
+  @images_tags = Hash(String, Array(String)).new { |h, k| h[k] = Array(String).new }
   @projects = Hash(String, Project).new
+
+  Log = Companion::Log.for(self)
 
   # Create an new Manager.
   def initialize(@docker : Docker::Client)
-    # Get images
-    # * fill @images
-    # * fill @tags
+    refresh_images
   end
 
   # Add a new project.
@@ -146,5 +150,19 @@ class Companion::Manager
     end
 
     @projects[name]
+  end
+
+  def refresh_images : Nil
+    Log.info { "Refreshing images" }
+    @images = @docker.images
+
+    @images.each do |image|
+      @images_ids[image.id] = image.repo_tags
+      image.repo_tags.try &.each do |tag|
+        @images_tags[tag].unshift(image.id)
+      end
+    end
+
+    Log.info &.emit("Images refreshed", images: images.size)
   end
 end

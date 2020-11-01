@@ -2,6 +2,7 @@ require "json"
 
 require "./container"
 require "./exceptions"
+require "./image"
 require "./macro"
 require "../core_ext/http/client"
 
@@ -28,6 +29,9 @@ module Companion::Docker::Client
   #
   # Returns nil if the container is not found.
   abstract def get_container_id(name : String) : String?
+
+  # Get images.
+  abstract def images : Array(Image)
 
   # Pull an image from Docker Hub.
   #
@@ -97,6 +101,11 @@ class Companion::Docker::Client::Local
         end
       end
     end
+  end
+
+  def images : Array(Image)
+    response = @client.get("/images/json")
+    Array(Image).from_json(response.body)
   end
 
   # Pull an image from dockerhub
