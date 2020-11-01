@@ -1,6 +1,6 @@
-require "./macro"
+require "../../macro"
 
-class Companion::Docker::Port
+class Companion::Docker::Client::Port
   include JSON::Serializable
 
   enum Type

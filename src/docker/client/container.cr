@@ -2,7 +2,7 @@ require "json"
 
 require "./port"
 
-class Companion::Docker::Container
+class Companion::Docker::Client::Container
   include JSON::Serializable
 
   json_property id : String
@@ -14,7 +14,7 @@ class Companion::Docker::Container
   json_property ports : Array(Port)
 end
 
-class Companion::Docker::CreateContainerOptions
+class Companion::Docker::Client::CreateContainerOptions
   include JSON::Serializable
 
   class ExposedPorts

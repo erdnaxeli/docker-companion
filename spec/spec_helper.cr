@@ -11,7 +11,7 @@ services:
 class FakeDockerClient
   include Companion::Docker::Client
 
-  alias CreateContainerCall = {options: Companion::Docker::CreateContainerOptions, name: String}
+  alias CreateContainerCall = {options: Companion::Docker::Client::CreateContainerOptions, name: String}
 
   property create_container_calls = Array(CreateContainerCall).new
 
@@ -24,8 +24,8 @@ class FakeDockerClient
   def get_container_id(name) : String?
   end
 
-  def images : Array(Companion::Docker::Image)
-    Array(Companion::Docker::Image).new
+  def images : Array(Companion::Docker::Client::Image)
+    Array(Companion::Docker::Client::Image).new
   end
 
   def pull_image(image, &block : Companion::Docker::Client::CreateImageResponse ->)

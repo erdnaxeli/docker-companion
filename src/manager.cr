@@ -5,7 +5,7 @@ require "./project"
 require "path"
 
 class Companion::Manager
-  getter images = Array(Docker::Image).new
+  getter images = Array(Docker::Client::Image).new
 
   # A hash {image id => [images tags]}
   @images_ids = Hash(String, Array(String)?).new
@@ -50,12 +50,12 @@ class Companion::Manager
 
     project.each_service do |service|
       container_name = get_container_name(name, service)
-      options = Docker::CreateContainerOptions.new
+      options = Docker::Client::CreateContainerOptions.new
       options.image = service.image
-      host_config = options.host_config = Docker::CreateContainerOptions::HostConfig.new
+      host_config = options.host_config = Docker::Client::CreateContainerOptions::HostConfig.new
 
       service.ports.each do |port|
-        binding = Docker::CreateContainerOptions::HostConfig::PortBinding.new
+        binding = Docker::Client::CreateContainerOptions::HostConfig::PortBinding.new
 
         if host_ip = port.host_ip
           binding.host_ip = host_ip
@@ -67,17 +67,17 @@ class Companion::Manager
 
         key = "#{port.container_port}/tcp"
         if !host_config.port_bindings.has_key?(key)
-          host_config.port_bindings[key] = Array(Docker::CreateContainerOptions::HostConfig::PortBinding).new
+          host_config.port_bindings[key] = Array(Docker::Client::CreateContainerOptions::HostConfig::PortBinding).new
         end
 
         host_config.port_bindings[key] << binding
       end
 
       service.volumes.each do |volume|
-        mount = Docker::CreateContainerOptions::HostConfig::Mount.new
+        mount = Docker::Client::CreateContainerOptions::HostConfig::Mount.new
 
         if source = volume.source
-          mount.type = Docker::CreateContainerOptions::HostConfig::Mount::Type::Bind
+          mount.type = Docker::Client::CreateContainerOptions::HostConfig::Mount::Type::Bind
           mount.source = source
         end
 
@@ -87,16 +87,19 @@ class Companion::Manager
 
       host_config.restart_policy.name = case service.restart
                                         in Docker::Compose::Service::RestartPolicy::No
-                                          Docker::CreateContainerOptions::HostConfig::RestartPolicy::Name::No
+                                          Docker::Client::CreateContainerOptions::HostConfig::RestartPolicy::Name::No
                                         in Docker::Compose::Service::RestartPolicy::Always
-                                          Docker::CreateContainerOptions::HostConfig::RestartPolicy::Name::Always
+                                          Docker::Client::CreateContainerOptions::HostConfig::RestartPolicy::Name::Always
                                         in Docker::Compose::Service::RestartPolicy::OnFailure
-                                          Docker::CreateContainerOptions::HostConfig::RestartPolicy::Name::OnFailure
+                                          Docker::Client::CreateContainerOptions::HostConfig::RestartPolicy::Name::OnFailure
                                         in Docker::Compose::Service::RestartPolicy::UnlessStopped
-                                          Docker::CreateContainerOptions::HostConfig::RestartPolicy::Name::UnlessStopped
+                                          Docker::Client::CreateContainerOptions::HostConfig::RestartPolicy::Name::UnlessStopped
                                         end
 
-      @docker.create_container(options, container_name)
+      begin
+        @docker.create_container(options, container_name)
+      rescue Docker::Client::ConflictException
+      end
     end
   end
 
@@ -108,12 +111,7 @@ class Companion::Manager
   # Pull images, creates and starts containers for the project *name*.
   def up(name : String)
     pull_images(name)
-
-    begin
-      create(name)
-    rescue Docker::ConflictException
-    end
-
+    create(name)
     start(name)
   end
 
@@ -125,7 +123,9 @@ class Companion::Manager
     end
   end
 
-  # Start the project *name*.
+  # Start all the containers for the project *name*.
+  #
+  # If a container is already running, it does nothing.
   def start(name : String)
     project = get_project(name)
     project.each_service do |service|

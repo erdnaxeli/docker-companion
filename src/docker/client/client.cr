@@ -3,8 +3,8 @@ require "json"
 require "./container"
 require "./exceptions"
 require "./image"
-require "./macro"
-require "../core_ext/http/client"
+require "../../macro"
+require "../../core_ext/http/client"
 
 module Companion::Docker::Client
   struct CreateContainerResponse

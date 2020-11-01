@@ -71,9 +71,9 @@ describe Companion::Manager do
     mount = options.host_config.mounts[0]
     mount.target.should eq("/data")
     mount.source.should eq("./data")
-    mount.type.should eq(Companion::Docker::CreateContainerOptions::HostConfig::Mount::Type::Bind)
+    mount.type.should eq(Companion::Docker::Client::CreateContainerOptions::HostConfig::Mount::Type::Bind)
 
-    options.host_config.restart_policy.name.should eq(Companion::Docker::CreateContainerOptions::HostConfig::RestartPolicy::Name::UnlessStopped)
+    options.host_config.restart_policy.name.should eq(Companion::Docker::Client::CreateContainerOptions::HostConfig::RestartPolicy::Name::UnlessStopped)
 
     options.host_config.port_bindings.size.should eq(1)
     key = options.host_config.port_bindings.first_key
