@@ -121,6 +121,8 @@ class Companion::Manager
     project.each_image do |image|
       @docker.pull_image(image) { }
     end
+
+    refresh_images
   end
 
   # Start all the containers for the project *name*.
