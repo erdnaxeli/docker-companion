@@ -1,0 +1,6 @@
+Docker-compose adds aliases so services can found them self.
+
+Instead of down then up, do a diff to recreate only needed ones.
+Better: warn the user and let it choose.
+
+Subscribe to events.
