@@ -63,7 +63,13 @@ module Companion
       Log.info &.emit("Add project", project_name: name)
       content = File.read(path)
       manager.add_project(name, content, Path[Dir.current] / name)
+
       Log.info &.emit("Starting project", project_name: name)
+      # As we don't know (yet) if the currently running containers are correctly
+      # configured, we just shut them down and create new ones.
+      #
+      # TODO: do that in a better way
+      manager.down(name)
       manager.up(name)
     end
 

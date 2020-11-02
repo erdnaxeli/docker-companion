@@ -103,19 +103,30 @@ class Companion::Manager
     end
   end
 
-  # Return an iterator over the projects' names.
+  # Kiils and removes all containers for the project *name*.
+  def down(name : String)
+    project = get_project(name)
+    project.each_service do |service|
+      container_name = get_container_name(name, service)
+      if id = @docker.get_container_id(container_name)
+        @docker.remove_container(id)
+      end
+    end
+  end
+
+  # Returns an iterator over the projects' names.
   def each_projects
     @projects.each_key
   end
 
-  # Pull images, creates and starts containers for the project *name*.
+  # Pulls images, creates and starts containers for the project *name*.
   def up(name : String)
     pull_images(name)
     create(name)
     start(name)
   end
 
-  # Pull the docker images for the project *name*.
+  # Pulls the docker images for the project *name*.
   def pull_images(name : String)
     project = get_project(name)
     project.each_image do |image|
@@ -125,7 +136,7 @@ class Companion::Manager
     refresh_images
   end
 
-  # Start all the containers for the project *name*.
+  # Starts all the containers for the project *name*.
   #
   # If a container is already running, it does nothing.
   def start(name : String)

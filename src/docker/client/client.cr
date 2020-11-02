@@ -83,7 +83,7 @@ class Companion::Docker::Client::Local
     end
   end
 
-  # List containers.
+  # Lists containers.
   #
   # By default list only running ones. Set *all* to `true` to get all containers.
   def containers(all = false) : Array(Container)
@@ -108,12 +108,19 @@ class Companion::Docker::Client::Local
     Array(Image).from_json(response.body)
   end
 
-  # Pull an image from dockerhub
+  # Pulls an image from dockerhub
   def pull_image(name, &block : CreateImageResponse ->)
     create_image(name, "https://hub.docker.com/") { |response| yield response }
   end
 
-  # Start a container.
+  # Removes a containers.
+  #
+  # If the container is running, it will be killed.
+  def remove_container(id : String) : Nil
+    @client.delete("/containers/#{id}?force=true")
+  end
+
+  # Starts a container.
   def start_container(id : String) : Nil
     @client.post("/containers/#{id}/start")
   end
