@@ -121,8 +121,8 @@ services:
       - default
       - gateway
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.services.slack.loadbalancer.server.port=9899"
+      traefik.enable: true
+      traefik.http.services.slack.loadbalancer.server.port: 9899
 
 networks:
   gateway:
@@ -148,10 +148,10 @@ networks:
 
     service.networks.should eq(["default", "gateway"])
     service.labels.should eq(
-      [
-        "traefik.enable=true",
-        "traefik.http.services.slack.loadbalancer.server.port=9899",
-      ]
+      {
+        "traefik.enable"                                       => "true",
+        "traefik.http.services.slack.loadbalancer.server.port" => "9899",
+      }
     )
   end
 

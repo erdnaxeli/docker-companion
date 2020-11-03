@@ -55,6 +55,9 @@ describe Companion::Manager do
               - 127.0.0.1:42:51
             volumes:
               - ./data:/data
+            labels:
+              traefik.http.routers.test.entrypoints: https
+              traefik.http.routers.test.tls.certresolver: letsencrypt
       )
     )
 
@@ -66,6 +69,13 @@ describe Companion::Manager do
     call[:name].should eq ("not_a_test")
     options = call[:options]
     options.image.should eq("bash:latest")
+
+    options.labels.should eq (
+      {
+        "traefik.http.routers.test.entrypoints"      => "https",
+        "traefik.http.routers.test.tls.certresolver" => "letsencrypt",
+      }
+    )
 
     options.host_config.mounts.size.should eq(1)
     mount = options.host_config.mounts[0]

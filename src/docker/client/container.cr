@@ -167,7 +167,7 @@ class Companion::Docker::Client::CreateContainerOptions
   json_property cmd = Array(String).new
   json_property image = ""
   json_property volumes = Volumes.new
-  json_property labels = Hash(String, String).new
+  json_property labels : Hash(String, String)?
   json_property host_config = HostConfig.new
   json_property networking_config = NetworkingConfig.new
 end

@@ -20,7 +20,7 @@ class Companion::Docker::Compose::File::Service
   property ports : Array(String)?
   property volumes : Array(String)?
   property networks : Array(String)?
-  property labels : Array(String)?
+  property labels : Hash(String, String)?
 end
 
 class Companion::Docker::Compose::File::Network

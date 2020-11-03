@@ -55,6 +55,8 @@ class Companion::Manager
       container_name = get_container_name(name, service)
       options = Docker::Client::CreateContainerOptions.new
       options.image = service.image
+      options.labels = service.labels
+
       host_config = options.host_config = Docker::Client::CreateContainerOptions::HostConfig.new
 
       service.ports.each do |port|

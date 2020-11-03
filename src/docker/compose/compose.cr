@@ -25,7 +25,7 @@ class Companion::Docker::Compose::Service
   getter build : String?
   getter container_name : String?
   getter image : String
-  getter labels : Array(String)?
+  getter labels : Hash(String, String)?
   getter networks : Array(String)?
   getter restart = RestartPolicy::No
   getter ports = Array(Port).new
