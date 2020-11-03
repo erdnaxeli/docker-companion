@@ -6,6 +6,7 @@ require "path"
 
 class Companion::Manager
   getter images = Array(Docker::Client::Image).new
+  getter networks = Array(Docker::Client::Network).new
 
   # A hash {image id => [images tags]}
   @images_ids = Hash(String, Array(String)?).new
@@ -18,6 +19,7 @@ class Companion::Manager
   # Create an new Manager.
   def initialize(@docker : Docker::Client)
     refresh_images
+    refresh_networks
   end
 
   # Add a new project.
@@ -33,7 +35,7 @@ class Companion::Manager
       raise "The projects #{name} already exists"
     end
 
-    @projects[name] = Project.new(compose)
+    @projects[name] = Project.new(name, compose)
 
     if !working_directory.nil?
       @projects[name].fix_mounts(working_directory)
@@ -47,6 +49,7 @@ class Companion::Manager
   # `#pull_images`.
   def create(name : String)
     project = get_project(name)
+    create_network(project)
 
     project.each_service do |service|
       container_name = get_container_name(name, service)
@@ -153,6 +156,17 @@ class Companion::Manager
     end
   end
 
+  # Creates a network if it does not exists.
+  private def create_network(project)
+    name = "#{project.name}_network"
+
+    if !@networks.any? { |n| n.name == name }
+      options = Docker::Client::CreateNetworkOptions.new
+      options.name = name
+      @docker.create_network(options)
+    end
+  end
+
   private def get_container_name(project_name, service)
     service.container_name || "#{project_name}_#{service.name}"
   end
@@ -177,5 +191,10 @@ class Companion::Manager
     end
 
     Log.info &.emit("Images refreshed", images: images.size)
+  end
+
+  def refresh_networks : Nil
+    Log.info { "Refreshing networks" }
+    @networks = @docker.networks
   end
 end

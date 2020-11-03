@@ -13,7 +13,7 @@ services:
     image: tada:42-tiny
         ))
 
-    project = Companion::Project.new(compose)
+    project = Companion::Project.new("test", compose)
     images = Array(String).new
     project.each_image do |image|
       images << image
@@ -41,7 +41,7 @@ services:
             - /here:/not-here
     ))
 
-    project = Companion::Project.new(compose)
+    project = Companion::Project.new("test", compose)
     project.fix_mounts(Path["/var/log"])
 
     project.compose.services[1].volumes[0].source.should be_nil

@@ -3,9 +3,10 @@ require "./docker/compose"
 require "path"
 
 class Companion::Project
+  getter name : String
   getter compose : Companion::Docker::Compose
 
-  def initialize(@compose)
+  def initialize(@name, @compose)
   end
 
   def each_image

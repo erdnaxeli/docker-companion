@@ -11,9 +11,10 @@ services:
 class FakeDockerClient
   include Companion::Docker::Client
 
-  alias CreateContainerCall = {options: Companion::Docker::Client::CreateContainerOptions, name: String}
+  alias CreateContainerCall = {options: CreateContainerOptions, name: String}
 
   property create_container_calls = Array(CreateContainerCall).new
+  getter networks = Array(Network).new
 
   def create_container(options, name) : CreateContainerResponse
     @create_container_calls << {options: options, name: name}
@@ -21,14 +22,18 @@ class FakeDockerClient
     CreateContainerResponse.from_json("{}")
   end
 
+  def create_network(options) : CreateNetworkResponse
+    CreateNetworkResponse.from_json(%({"Id": "42"}))
+  end
+
   def get_container_id(name) : String?
   end
 
-  def images : Array(Companion::Docker::Client::Image)
-    Array(Companion::Docker::Client::Image).new
+  def images : Array(Image)
+    Array(Image).new
   end
 
-  def pull_image(image, &block : Companion::Docker::Client::CreateImageResponse ->)
+  def pull_image(image, &block : CreateImageResponse ->)
   end
 
   def start_container(id) : Nil

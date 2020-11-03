@@ -3,6 +3,7 @@ require "json"
 require "./container"
 require "./exceptions"
 require "./image"
+require "./network"
 require "../../macro"
 require "../../core_ext/http/client"
 
@@ -24,6 +25,8 @@ module Companion::Docker::Client
   end
 
   abstract def create_container(options : CreateContainerOptions, name : String) : CreateContainerResponse
+  # Creates a network.
+  abstract def create_network(options : CreateNetworkOptions) : CreateNetworkResponse
 
   # Get a container's id.
   #
@@ -55,7 +58,7 @@ class Companion::Docker::Client::Local
     @client = HTTP::Client.unix(@config.socket)
   end
 
-  # Create a new container and return its id.
+  # Creates a new container and return its id.
   def create_container(options : CreateContainerOptions, name : String? = nil) : CreateContainerResponse
     route = name ? "/containers/create?name=#{name}" : "/containers/create"
     raw_response = @client.post(route, headers: HTTP::Headers{"Content-Type" => "application/json"}, body: options.to_json)
@@ -71,6 +74,11 @@ class Companion::Docker::Client::Local
     end
 
     response
+  end
+
+  def create_network(options : CreateNetworkOptions) : CreateNetworkResponse
+    raw_response = @client.post("/networks/create", headers: HTTP::Headers{"Content-Type" => "application/json"}, body: options.to_json)
+    CreateNetworkResponse.from_json(raw_response.body)
   end
 
   # Create an image and returns its id
@@ -106,6 +114,11 @@ class Companion::Docker::Client::Local
   def images : Array(Image)
     response = @client.get("/images/json")
     Array(Image).from_json(response.body)
+  end
+
+  def networks : Array(Network)
+    response = @client.get("/networks")
+    Array(Network).from_json(response.body)
   end
 
   # Pulls an image from dockerhub

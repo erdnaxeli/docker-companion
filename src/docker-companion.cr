@@ -95,6 +95,13 @@ module Companion
 
                 conn.send_message(event.room_id, msg)
               end
+              parser.on("networks", "list networks") do
+                msg = String.build do |str|
+                  str << "* " << manager.networks.map { |n| %(#{n.name} #{n.id}) }.join("\n* ")
+                end
+
+                conn.send_message(event.room_id, msg)
+              end
               parser.invalid_option { }
               parser.unknown_args do |args|
                 if args.size > 0 && args[0] == "help"
