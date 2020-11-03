@@ -73,8 +73,23 @@ module Companion
       manager.up(name)
     end
 
+    first_sync = true
     loop do
       sync = channel.receive
+      sync.invites do |event|
+        conn.join(event.room_id)
+        conn.send_message(
+          event.room_id,
+          "Hi! I am your new companion, here to help you manage your docker services. Try the 'help' command to begin."
+        )
+      end
+
+      if first_sync
+        # Skip the first sync messages as it can contains messages already read.
+        first_sync = false
+        next
+      end
+
       sync.room_events do |event|
         if (message = event.message?) && event.sender != conn.user_id && config.users.includes? event.sender
           if parameters = Parameters.parse(message.body)
