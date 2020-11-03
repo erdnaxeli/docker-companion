@@ -21,6 +21,7 @@ class Companion::Docker::Compose::File::Service
   property volumes : Array(String)?
   property networks : Array(String)?
   property labels : Hash(String, String)?
+  property environment : Hash(String, String)?
 end
 
 class Companion::Docker::Compose::File::Network

@@ -33,16 +33,10 @@ class Companion::Docker::Client::CreateContainerOptions
     end
   end
 
-  class Env
-    @env = Hash(String, String).new
-
-    def <<(t)
-      @env[t[0]] = t[1]
-    end
-
+  class Env < Hash(String, String)
     def to_json(json)
       json.array do
-        @env.each do |key, value|
+        self.each do |key, value|
           json.string("#{key.upcase}=#{value}")
         end
       end

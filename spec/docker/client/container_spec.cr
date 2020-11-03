@@ -43,8 +43,8 @@ describe Companion::Docker::Client::CreateContainerOptions::Env do
 
   it "can add var" do
     env = Companion::Docker::Client::CreateContainerOptions::Env.new
-    env << {"SOME_VAR", "some value"}
-    env << {"lalala", "I like piñatas"}
+    env["SOME_VAR"] = "some value"
+    env["lalala"] = "I like piñatas"
 
     str = JSON.build do |json|
       env.to_json(json)

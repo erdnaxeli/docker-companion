@@ -56,6 +56,7 @@ class Companion::Manager
       options = Docker::Client::CreateContainerOptions.new
       options.image = service.image
       options.labels = service.labels
+      service.env.try &.each { |k, v| options.env[k] = v }
 
       host_config = options.host_config = Docker::Client::CreateContainerOptions::HostConfig.new
 

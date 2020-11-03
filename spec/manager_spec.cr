@@ -58,6 +58,8 @@ describe Companion::Manager do
             labels:
               traefik.http.routers.test.entrypoints: https
               traefik.http.routers.test.tls.certresolver: letsencrypt
+            environment:
+              PASSWORD: secretword
       )
     )
 
@@ -69,7 +71,7 @@ describe Companion::Manager do
     call[:name].should eq ("not_a_test")
     options = call[:options]
     options.image.should eq("bash:latest")
-
+    options.env.should eq({"PASSWORD" => "secretword"})
     options.labels.should eq (
       {
         "traefik.http.routers.test.entrypoints"      => "https",

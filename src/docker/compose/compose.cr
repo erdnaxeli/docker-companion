@@ -30,6 +30,7 @@ class Companion::Docker::Compose::Service
   getter restart = RestartPolicy::No
   getter ports = Array(Port).new
   getter volumes = Array(Volume).new
+  getter env : Hash(String, String)?
 
   def initialize(@name, service : File::Service)
     @build = service.build
@@ -69,6 +70,8 @@ class Companion::Docker::Compose::Service
         @volumes << Volume.new(volume)
       end
     end
+
+    @env = service.environment
   end
 end
 
