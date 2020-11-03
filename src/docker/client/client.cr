@@ -82,7 +82,7 @@ class Companion::Docker::Client::Local
   end
 
   # Create an image and returns its id
-  def create_image(from_image : String, repo : String, tag = "latest")
+  def create_image(from_image : String, repo : String, tag : String)
     params = HTTP::Params.encode({fromImage: from_image, repo: repo, tag: tag})
     @client.post("/images/create?#{params}") do |response|
       response.body_io.each_line do |line|
@@ -122,8 +122,8 @@ class Companion::Docker::Client::Local
   end
 
   # Pulls an image from dockerhub
-  def pull_image(name, &block : CreateImageResponse ->)
-    create_image(name, "https://hub.docker.com/") { |response| yield response }
+  def pull_image(name, tag="latest", &block : CreateImageResponse ->)
+    create_image(name, "https://hub.docker.com/", tag) { |response| yield response }
   end
 
   # Removes a containers.

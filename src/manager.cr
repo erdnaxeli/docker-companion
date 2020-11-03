@@ -141,7 +141,12 @@ class Companion::Manager
   def pull_images(name : String)
     project = get_project(name)
     project.each_image do |image|
-      @docker.pull_image(image) { }
+      parts = image.split(":")
+      if parts.size == 1
+        @docker.pull_image(image) { }
+      else
+        @docker.pull_image(parts[0], parts[1]) { }
+      end
     end
 
     refresh_images

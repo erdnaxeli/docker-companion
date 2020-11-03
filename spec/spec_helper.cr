@@ -33,7 +33,7 @@ class FakeDockerClient
     Array(Image).new
   end
 
-  def pull_image(image, &block : CreateImageResponse ->)
+  def pull_image(image, tag = "latest", &block : CreateImageResponse ->)
   end
 
   def start_container(id) : Nil
