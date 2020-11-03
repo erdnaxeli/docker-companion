@@ -23,7 +23,7 @@ class FakeDockerClient
   end
 
   def create_network(options) : CreateNetworkResponse
-    CreateNetworkResponse.from_json(%({"Id": "42"}))
+    CreateNetworkResponse.from_json(%({"Id": "#{options.name}_id"}))
   end
 
   def get_container_id(name) : String?

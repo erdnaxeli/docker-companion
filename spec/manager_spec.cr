@@ -83,6 +83,12 @@ describe Companion::Manager do
     port_binding = options.host_config.port_bindings[key][0]
     port_binding.host_ip.should eq("127.0.0.1")
     port_binding.host_port.should eq("42")
+
+    options.networking_config.endpoints_config.size.should eq(1)
+    endpoints_config = options.networking_config.endpoints_config
+    endpoints_config.first_key.should eq("test_network")
+    endpoints_config.first_value.aliases.should eq(["test"])
+    endpoints_config.first_value.network_id.should eq("test_network_id")
   end
 
   it "raises when creating containers for an unknown project" do

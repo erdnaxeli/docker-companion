@@ -138,6 +138,25 @@ class Companion::Docker::Client::CreateContainerOptions
     json_property restart_policy = RestartPolicy.new
   end
 
+  class NetworkingConfig
+    include JSON::Serializable
+
+    def initialize
+    end
+
+    json_property endpoints_config = Hash(String, EndpointConfig).new
+  end
+
+  class EndpointConfig
+    include JSON::Serializable
+
+    def initialize
+    end
+
+    json_property aliases = Array(String).new
+    json_property "NetworkID", network_id = ""
+  end
+
   def initialize
   end
 
@@ -150,4 +169,5 @@ class Companion::Docker::Client::CreateContainerOptions
   json_property volumes = Volumes.new
   json_property labels = Hash(String, String).new
   json_property host_config = HostConfig.new
+  json_property networking_config = NetworkingConfig.new
 end

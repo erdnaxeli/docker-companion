@@ -49,7 +49,7 @@ class Companion::Manager
   # `#pull_images`.
   def create(name : String)
     project = get_project(name)
-    create_network(project)
+    network_name, network_id = create_network(project)
 
     project.each_service do |service|
       container_name = get_container_name(name, service)
@@ -98,6 +98,11 @@ class Companion::Manager
                                         in Docker::Compose::Service::RestartPolicy::UnlessStopped
                                           Docker::Client::CreateContainerOptions::HostConfig::RestartPolicy::Name::UnlessStopped
                                         end
+
+      endpoint_config = Docker::Client::CreateContainerOptions::EndpointConfig.new
+      endpoint_config.aliases = [service.name]
+      endpoint_config.network_id = network_id
+      options.networking_config.endpoints_config[network_name] = endpoint_config
 
       begin
         @docker.create_container(options, container_name)
@@ -160,11 +165,16 @@ class Companion::Manager
   private def create_network(project)
     name = "#{project.name}_network"
 
-    if !@networks.any? { |n| n.name == name }
+    if network = @networks.find { |n| n.name == name }
+      id = network.id
+    else
       options = Docker::Client::CreateNetworkOptions.new
       options.name = name
-      @docker.create_network(options)
+      response = @docker.create_network(options)
+      id = response.id
     end
+
+    {name, id}
   end
 
   private def get_container_name(project_name, service)
