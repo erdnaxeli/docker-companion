@@ -14,7 +14,13 @@ class FakeDockerClient
   alias CreateContainerCall = {options: CreateContainerOptions, name: String}
 
   property create_container_calls = Array(CreateContainerCall).new
-  getter networks = Array(Network).new
+
+  getter networks : Array(Network)
+
+  def initialize
+    othernetwork = Network.from_json(%({"Name": "othernetwork", "Id": "othernetwork_id"}))
+    @networks = [othernetwork]
+  end
 
   def create_container(options, name) : CreateContainerResponse
     @create_container_calls << {options: options, name: name}

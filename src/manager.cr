@@ -49,7 +49,7 @@ class Companion::Manager
   # `#pull_images`.
   def create(name : String)
     project = get_project(name)
-    network_name, network_id = create_network(project)
+    network_name, network_id = create_default_network(project)
 
     project.each_service do |service|
       container_name = get_container_name(name, service)
@@ -102,10 +102,28 @@ class Companion::Manager
                                           Docker::Client::CreateContainerOptions::HostConfig::RestartPolicy::Name::UnlessStopped
                                         end
 
-      endpoint_config = Docker::Client::CreateContainerOptions::EndpointConfig.new
-      endpoint_config.aliases = [service.name]
-      endpoint_config.network_id = network_id
-      options.networking_config.endpoints_config[network_name] = endpoint_config
+      if networks = service.networks
+        networks.each do |network|
+          endpoint_config = Docker::Client::CreateContainerOptions::EndpointConfig.new
+          endpoint_config.aliases = [service.name]
+
+          if network == "default"
+            endpoint_config.network_id = network_id
+            options.networking_config.endpoints_config[network_name] = endpoint_config
+          elsif id = get_network_id(network)
+            endpoint_config.network_id = id
+            options.networking_config.endpoints_config[network] = endpoint_config
+          else
+            raise "Unknown network #{network}"
+          end
+        end
+      else
+        # Add default network
+        endpoint_config = Docker::Client::CreateContainerOptions::EndpointConfig.new
+        endpoint_config.aliases = [service.name]
+        endpoint_config.network_id = network_id
+        options.networking_config.endpoints_config[network_name] = endpoint_config
+      end
 
       begin
         @docker.create_container(options, container_name)
@@ -170,12 +188,11 @@ class Companion::Manager
   end
 
   # Creates a network if it does not exists.
-  private def create_network(project)
+  private def create_default_network(project)
     name = "#{project.name}_network"
 
-    if network = @networks.find { |n| n.name == name }
-      id = network.id
-    else
+    id = get_network_id(name)
+    if id.nil?
       options = Docker::Client::CreateNetworkOptions.new
       options.name = name
       response = @docker.create_network(options)
@@ -187,6 +204,12 @@ class Companion::Manager
 
   private def get_container_name(project_name, service)
     service.container_name || "#{project_name}_#{service.name}"
+  end
+
+  private def get_network_id(name)
+    if network = @networks.find { |n| n.name == name }
+      network.id
+    end
   end
 
   private def get_project(name)

@@ -60,13 +60,24 @@ describe Companion::Manager do
               traefik.http.routers.test.tls.certresolver: letsencrypt
             environment:
               PASSWORD: secretword
+          othertest:
+            image: bash:latest
+            networks:
+              - othernetwork
+              - default
+          nonet:
+            image: bash:latest
+            networks: []
       )
     )
 
     DOCKER.reset
     manager.create("test")
 
-    DOCKER.create_container_calls.size.should eq(1)
+    DOCKER.create_container_calls.size.should eq(3)
+
+    # Test first container
+
     call = DOCKER.create_container_calls[0]
     call[:name].should eq ("not_a_test")
     options = call[:options]
@@ -101,6 +112,28 @@ describe Companion::Manager do
     endpoints_config.first_key.should eq("test_network")
     endpoints_config.first_value.aliases.should eq(["test"])
     endpoints_config.first_value.network_id.should eq("test_network_id")
+
+    #  Test second container
+
+    call = DOCKER.create_container_calls[1]
+    call[:name].should eq("test_othertest")
+    options = call[:options]
+    options.image.should eq("bash:latest")
+    options.networking_config.endpoints_config.size.should eq(2)
+    endpoints_config = options.networking_config.endpoints_config
+    endpoints_config.keys.should eq(["othernetwork", "test_network"])
+    endpoints_config["othernetwork"].aliases.should eq(["othertest"])
+    endpoints_config["othernetwork"].network_id.should eq("othernetwork_id")
+    endpoints_config["test_network"].aliases.should eq(["othertest"])
+    endpoints_config["test_network"].network_id.should eq("test_network_id")
+
+    #  Test third container
+
+    call = DOCKER.create_container_calls[2]
+    call[:name].should eq("test_nonet")
+    options = call[:options]
+    options.image.should eq("bash:latest")
+    options.networking_config.endpoints_config.size.should eq(0)
   end
 
   it "raises when creating containers for an unknown project" do

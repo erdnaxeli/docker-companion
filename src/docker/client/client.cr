@@ -122,7 +122,7 @@ class Companion::Docker::Client::Local
   end
 
   # Pulls an image from dockerhub
-  def pull_image(name, tag="latest", &block : CreateImageResponse ->)
+  def pull_image(name, tag = "latest", &block : CreateImageResponse ->)
     create_image(name, "https://hub.docker.com/", tag) { |response| yield response }
   end
 

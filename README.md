@@ -71,6 +71,7 @@ Major docker-compose features not supported:
 Specific points:
 * labels must use the dictionnary form
 * read-only mode for bind mounts is not supported
+* networks other than "default" are not created and must exist
 
 ### Naming
 
