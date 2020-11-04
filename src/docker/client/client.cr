@@ -82,8 +82,8 @@ class Companion::Docker::Client::Local
   end
 
   # Create an image and returns its id
-  def create_image(from_image : String, repo : String, tag : String)
-    params = HTTP::Params.encode({fromImage: from_image, repo: repo, tag: tag})
+  def create_image(from_image : String, tag : String)
+    params = HTTP::Params.encode({fromImage: from_image, tag: tag})
     @client.post("/images/create?#{params}") do |response|
       response.body_io.each_line do |line|
         yield CreateImageResponse.from_json(line)
@@ -122,10 +122,8 @@ class Companion::Docker::Client::Local
   end
 
   # Pulls an image from dockerhub
-  #
-  # It works even with images not on docker hub, but I don't really know why :D
   def pull_image(name, tag = "latest", &block : CreateImageResponse ->)
-    create_image(name, "https://hub.docker.com/", tag) { |response| yield response }
+    create_image(name, tag) { |response| yield response }
   end
 
   # Removes a containers.
