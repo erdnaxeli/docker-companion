@@ -122,6 +122,8 @@ class Companion::Docker::Client::Local
   end
 
   # Pulls an image from dockerhub
+  #
+  # It works even with images not on docker hub, but I don't really know why :D
   def pull_image(name, tag = "latest", &block : CreateImageResponse ->)
     create_image(name, "https://hub.docker.com/", tag) { |response| yield response }
   end
