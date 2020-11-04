@@ -69,7 +69,7 @@ class Companion::Docker::Client::Local
       when 409
         raise ConflictException.new(response.message)
       else
-        raise "Invalid status code #{raw_response.status_code}"
+        raise "Invalid status code #{raw_response.status_code}: #{raw_response.body}"
       end
     end
 
@@ -88,6 +88,19 @@ class Companion::Docker::Client::Local
       response.body_io.each_line do |line|
         yield CreateImageResponse.from_json(line)
       end
+    end
+  end
+
+  # Connect a container to a network
+  def connect_network(options : ConnectNetworkOptions) : Nil
+    response = @client.post(
+      "/networks/#{options.endpoint_config.network_id}/connect",
+      headers: HTTP::Headers{"Content-Type" => "application/json"},
+      body: options.to_json
+    )
+
+    if !response.success?
+      raise "Invalid status code #{response.status_code}: #{response.body}"
     end
   end
 

@@ -102,6 +102,7 @@ class Companion::Manager
                                           Docker::Client::CreateContainerOptions::HostConfig::RestartPolicy::Name::UnlessStopped
                                         end
 
+      additional_networks = Array(Docker::Client::CreateContainerOptions::EndpointConfig).new
       if networks = service.networks
         networks.each do |network|
           endpoint_config = Docker::Client::CreateContainerOptions::EndpointConfig.new
@@ -109,10 +110,20 @@ class Companion::Manager
 
           if network == "default"
             endpoint_config.network_id = network_id
-            options.networking_config.endpoints_config[network_name] = endpoint_config
+
+            if options.networking_config.endpoints_config.size == 0
+              options.networking_config.endpoints_config[network_name] = endpoint_config
+            else
+              additional_networks << endpoint_config
+            end
           elsif id = get_network_id(network)
             endpoint_config.network_id = id
-            options.networking_config.endpoints_config[network] = endpoint_config
+
+            if options.networking_config.endpoints_config.size == 0
+              options.networking_config.endpoints_config[network] = endpoint_config
+            else
+              additional_networks << endpoint_config
+            end
           else
             raise "Unknown network #{network}"
           end
@@ -126,8 +137,19 @@ class Companion::Manager
       end
 
       begin
-        @docker.create_container(options, container_name)
+        response = @docker.create_container(options, container_name)
       rescue Docker::Client::ConflictException
+        return
+      end
+
+      if container_id = response.id
+        additional_networks.each do |endpoint|
+          options = Docker::Client::ConnectNetworkOptions.new
+          options.container = container_id
+          options.endpoint_config = endpoint
+
+          @docker.connect_network(options)
+        end
       end
     end
   end

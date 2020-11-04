@@ -165,3 +165,13 @@ class Companion::Docker::Client::CreateContainerOptions
   json_property host_config = HostConfig.new
   json_property networking_config = NetworkingConfig.new
 end
+
+class Companion::Docker::Client::ConnectNetworkOptions
+  include JSON::Serializable
+
+  def initialize
+  end
+
+  json_property container = ""
+  json_property endpoint_config = CreateContainerOptions::EndpointConfig.new
+end
