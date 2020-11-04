@@ -20,6 +20,10 @@ class Companion::Docker::Client::CreateContainerOptions
   class ExposedPorts
     @ports = Array(Tuple(Int16, Port::Type)).new
 
+    def <<(port : Int16) : Nil
+      add_port(port)
+    end
+
     def add_port(port : Int16, type = Port::Type::Tcp) : Nil
       @ports << {port, type}
     end

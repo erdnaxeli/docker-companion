@@ -77,6 +77,7 @@ class Companion::Manager
         end
 
         host_config.port_bindings[key] << binding
+        options.exposed_ports << port.container_port
       end
 
       service.volumes.each do |volume|
