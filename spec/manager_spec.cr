@@ -119,13 +119,17 @@ describe Companion::Manager do
     call[:name].should eq("test_othertest")
     options = call[:options]
     options.image.should eq("bash:latest")
-    options.networking_config.endpoints_config.size.should eq(2)
+    options.networking_config.endpoints_config.size.should eq(1)
     endpoints_config = options.networking_config.endpoints_config
-    endpoints_config.keys.should eq(["othernetwork", "test_network"])
-    endpoints_config["othernetwork"].aliases.should eq(["othertest"])
-    endpoints_config["othernetwork"].network_id.should eq("othernetwork_id")
-    endpoints_config["test_network"].aliases.should eq(["othertest"])
-    endpoints_config["test_network"].network_id.should eq("test_network_id")
+    endpoints_config.first_key.should eq("othernetwork")
+    endpoints_config.first_value.aliases.should eq(["othertest"])
+    endpoints_config.first_value.network_id.should eq("othernetwork_id")
+
+    DOCKER.connect_network_calls.size.should eq(1)
+    call = DOCKER.connect_network_calls[0]
+    call[:options].container.should eq("test_othertest_id")
+    call[:options].endpoint_config.aliases.should eq(["othertest"])
+    call[:options].endpoint_config.network_id.should eq("test_network_id")
 
     #  Test third container
 

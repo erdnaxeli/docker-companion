@@ -58,84 +58,14 @@ class Companion::Manager
       options.labels = service.labels
       service.env.try &.each { |k, v| options.env[k] = v }
 
-      host_config = options.host_config = Docker::Client::CreateContainerOptions::HostConfig.new
-
-      service.ports.each do |port|
-        binding = Docker::Client::CreateContainerOptions::HostConfig::PortBinding.new
-
-        if host_ip = port.host_ip
-          binding.host_ip = host_ip
-        end
-
-        if host_port = port.host_port
-          binding.host_port = host_port.to_s
-        end
-
-        key = "#{port.container_port}/tcp"
-        if !host_config.port_bindings.has_key?(key)
-          host_config.port_bindings[key] = Array(Docker::Client::CreateContainerOptions::HostConfig::PortBinding).new
-        end
-
-        host_config.port_bindings[key] << binding
-        options.exposed_ports << port.container_port
-      end
-
-      service.volumes.each do |volume|
-        mount = Docker::Client::CreateContainerOptions::HostConfig::Mount.new
-
-        if source = volume.source
-          mount.type = Docker::Client::CreateContainerOptions::HostConfig::Mount::Type::Bind
-          mount.source = source
-        end
-
-        mount.target = volume.target
-        host_config.mounts << mount
-      end
-
-      host_config.restart_policy.name = case service.restart
-                                        in Docker::Compose::Service::RestartPolicy::No
-                                          Docker::Client::CreateContainerOptions::HostConfig::RestartPolicy::Name::No
-                                        in Docker::Compose::Service::RestartPolicy::Always
-                                          Docker::Client::CreateContainerOptions::HostConfig::RestartPolicy::Name::Always
-                                        in Docker::Compose::Service::RestartPolicy::OnFailure
-                                          Docker::Client::CreateContainerOptions::HostConfig::RestartPolicy::Name::OnFailure
-                                        in Docker::Compose::Service::RestartPolicy::UnlessStopped
-                                          Docker::Client::CreateContainerOptions::HostConfig::RestartPolicy::Name::UnlessStopped
-                                        end
-
-      additional_networks = Array(Docker::Client::CreateContainerOptions::EndpointConfig).new
-      if networks = service.networks
-        networks.each do |network|
-          endpoint_config = Docker::Client::CreateContainerOptions::EndpointConfig.new
-          endpoint_config.aliases = [service.name]
-
-          if network == "default"
-            endpoint_config.network_id = network_id
-
-            if options.networking_config.endpoints_config.size == 0
-              options.networking_config.endpoints_config[network_name] = endpoint_config
-            else
-              additional_networks << endpoint_config
-            end
-          elsif id = get_network_id(network)
-            endpoint_config.network_id = id
-
-            if options.networking_config.endpoints_config.size == 0
-              options.networking_config.endpoints_config[network] = endpoint_config
-            else
-              additional_networks << endpoint_config
-            end
-          else
-            raise "Unknown network #{network}"
-          end
-        end
-      else
-        # Add default network
-        endpoint_config = Docker::Client::CreateContainerOptions::EndpointConfig.new
-        endpoint_config.aliases = [service.name]
-        endpoint_config.network_id = network_id
-        options.networking_config.endpoints_config[network_name] = endpoint_config
-      end
+      add_ports(service, options)
+      add_volumes(service, options.host_config)
+      additional_networks = add_networks(
+        service,
+        options.networking_config.endpoints_config,
+        network_name,
+        network_id,
+      )
 
       begin
         response = @docker.create_container(options, container_name)
@@ -208,6 +138,98 @@ class Companion::Manager
         raise "Unknown container #{container_name}"
       end
     end
+  end
+
+  # Add service's networks to endpoints_config.
+  #
+  # As Docker allow to specify only one network at the container creation, the
+  # other ones are returned in an array and the container must be connected to
+  # them.
+  private def add_networks(service, endpoints_config, default_network_name, default_network_id)
+    additional_networks = Array(Docker::Client::CreateContainerOptions::EndpointConfig).new
+    if networks = service.networks
+      networks.each do |network|
+        endpoint_config = Docker::Client::CreateContainerOptions::EndpointConfig.new
+        endpoint_config.aliases = [service.name]
+
+        if network == "default"
+          endpoint_config.network_id = default_network_id
+
+          if endpoints_config.size == 0
+            endpoints_config[default_network_name] = endpoint_config
+          else
+            additional_networks << endpoint_config
+          end
+        elsif id = get_network_id(network)
+          endpoint_config.network_id = id
+
+          if endpoints_config.size == 0
+            endpoints_config[network] = endpoint_config
+          else
+            additional_networks << endpoint_config
+          end
+        else
+          raise "Unknown network #{network}"
+        end
+      end
+    else
+      # Add default network
+      endpoint_config = Docker::Client::CreateContainerOptions::EndpointConfig.new
+      endpoint_config.aliases = [service.name]
+      endpoint_config.network_id = default_network_id
+      endpoints_config[default_network_name] = endpoint_config
+    end
+
+    additional_networks
+  end
+
+  private def add_ports(service, options) : Nil
+    host_config = options.host_config
+
+    service.ports.each do |port|
+      binding = Docker::Client::CreateContainerOptions::HostConfig::PortBinding.new
+
+      if host_ip = port.host_ip
+        binding.host_ip = host_ip
+      end
+
+      if host_port = port.host_port
+        binding.host_port = host_port.to_s
+      end
+
+      key = "#{port.container_port}/tcp"
+      if !host_config.port_bindings.has_key?(key)
+        host_config.port_bindings[key] = Array(Docker::Client::CreateContainerOptions::HostConfig::PortBinding).new
+      end
+
+      host_config.port_bindings[key] << binding
+      options.exposed_ports << port.container_port
+    end
+  end
+
+  private def add_volumes(service, host_config) : Nil
+    service.volumes.each do |volume|
+      mount = Docker::Client::CreateContainerOptions::HostConfig::Mount.new
+
+      if source = volume.source
+        mount.type = Docker::Client::CreateContainerOptions::HostConfig::Mount::Type::Bind
+        mount.source = source
+      end
+
+      mount.target = volume.target
+      host_config.mounts << mount
+    end
+
+    host_config.restart_policy.name = case service.restart
+                                      in Docker::Compose::Service::RestartPolicy::No
+                                        Docker::Client::CreateContainerOptions::HostConfig::RestartPolicy::Name::No
+                                      in Docker::Compose::Service::RestartPolicy::Always
+                                        Docker::Client::CreateContainerOptions::HostConfig::RestartPolicy::Name::Always
+                                      in Docker::Compose::Service::RestartPolicy::OnFailure
+                                        Docker::Client::CreateContainerOptions::HostConfig::RestartPolicy::Name::OnFailure
+                                      in Docker::Compose::Service::RestartPolicy::UnlessStopped
+                                        Docker::Client::CreateContainerOptions::HostConfig::RestartPolicy::Name::UnlessStopped
+                                      end
   end
 
   # Creates a network if it does not exists.

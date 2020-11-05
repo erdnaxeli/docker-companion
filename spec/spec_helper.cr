@@ -12,8 +12,10 @@ class FakeDockerClient
   include Companion::Docker::Client
 
   alias CreateContainerCall = {options: CreateContainerOptions, name: String}
+  alias ConnectNetworkCall = {options: ConnectNetworkOptions}
 
-  property create_container_calls = Array(CreateContainerCall).new
+  getter create_container_calls = Array(CreateContainerCall).new
+  getter connect_network_calls = Array(ConnectNetworkCall).new
 
   getter networks : Array(Network)
 
@@ -22,10 +24,14 @@ class FakeDockerClient
     @networks = [othernetwork]
   end
 
+  def connect_network(options)
+    @connect_network_calls << {options: options}
+  end
+
   def create_container(options, name) : CreateContainerResponse
     @create_container_calls << {options: options, name: name}
 
-    CreateContainerResponse.from_json("{}")
+    CreateContainerResponse.from_json(%({"Id": "#{name}_id"}))
   end
 
   def create_network(options) : CreateNetworkResponse
