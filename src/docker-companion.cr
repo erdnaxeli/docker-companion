@@ -22,12 +22,13 @@ module Companion
     struct Matrix
       include YAML::Serializable
 
-      property homeserver : String
-      property access_token : String
+      getter access_token : String
+      getter homeserver : String
+      getter notification_room : String
     end
 
-    property matrix : Matrix
-    property users : Array(String)
+    getter matrix : Matrix
+    getter users : Array(String)
   end
 
   def self.read_config(filename = "config.yaml") : Config
@@ -44,11 +45,23 @@ module Companion
       config.matrix.homeserver,
       config.matrix.access_token,
     )
-    channel = Channel(Caridina::Events::Sync).new
-    conn.sync(channel)
 
     manager = Manager.new(Docker::Client::Local.new)
+    spawn listen_matrix(config, conn, manager)
+    add_projects(manager)
 
+    manager.watch_updates do |event|
+      conn.send_message(
+        config.matrix.notification_room,
+        %(A new image "#{event.image}" was pulled. To use it, run the command `update #{event.project}/#{event.container}`.),
+        %(A new image "#{event.image}" was pulled. To use it, run the command <code>update #{event.project}/#{event.container}</code>.)
+      )
+    end
+
+    sleep
+  end
+
+  def self.add_projects(manager : Manager) : Nil
     Log.info { "Adding projects" }
     Dir.new(Dir.current).each_child do |name|
       if !File.directory?(name)
@@ -72,8 +85,13 @@ module Companion
       manager.down(name)
       manager.up(name)
     end
+  end
 
+  def self.listen_matrix(config : Config, conn : Caridina::Connection, manager : Manager) : Nil
+    channel = Channel(Caridina::Events::Sync).new
+    conn.sync(channel)
     first_sync = true
+
     loop do
       sync = channel.receive
       sync.invites do |event|

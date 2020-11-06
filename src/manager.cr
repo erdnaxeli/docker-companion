@@ -1,5 +1,6 @@
 require "./docker/client"
 require "./docker/compose"
+require "./events"
 require "./project"
 
 require "path"
@@ -108,18 +109,23 @@ class Companion::Manager
     start(name)
   end
 
+  # Pull an image.
+  #
+  # The image name can contains a tag in the form "image:tag", and even a
+  # registry in the form "regitry/image:tag".
+  def pull_image(image : String)
+    parts = image.split(":")
+    if parts.size == 1
+      @docker.pull_image(image) { }
+    else
+      @docker.pull_image(parts[0], parts[1]) { }
+    end
+  end
+
   # Pulls the docker images for the project *name*.
   def pull_images(name : String)
     project = get_project(name)
-    project.each_image do |image|
-      parts = image.split(":")
-      if parts.size == 1
-        @docker.pull_image(image) { }
-      else
-        @docker.pull_image(parts[0], parts[1]) { }
-      end
-    end
-
+    project.each_image { |image| pull_image(image) }
     refresh_images
   end
 
@@ -137,6 +143,54 @@ class Companion::Manager
       else
         raise "Unknown container #{container_name}"
       end
+    end
+  end
+
+  record ImageState, image_id : String, services = Array(Tuple(String, String)).new
+
+  # This methods watch for any image update.
+  #
+  # If an update is found, the block is called with an event indicating the
+  # image name and the projects's containers concerned.
+  def watch_updates(&block : UpdateEvent ->)
+    state = Hash(String, ImageState).new do |h, k|
+      # we take the last known id
+      image_id = @images_tags[k][0]
+      h[k] = ImageState.new(image_id: image_id)
+    end
+
+    @projects.each do |name, project|
+      project.each_service do |service|
+        state[service.image].services << {name, service.name}
+      end
+    end
+
+    loop do
+      state.each_key do |image|
+        pull_image(image)
+      end
+      refresh_images
+
+      state.each do |image_tag, image_state|
+        last_known_id = @images_tags[image_tag][0]
+        if image_state.image_id == last_known_id
+          next
+        end
+
+        image_state.services.each do |project, container|
+          yield UpdateEvent.new(
+            container: container,
+            image: image_tag,
+            project: project,
+          )
+          state[image_tag] = ImageState.new(
+            image_id: last_known_id,
+            services: image_state.services,
+          )
+        end
+      end
+
+      sleep 30.seconds
     end
   end
 
@@ -265,21 +319,23 @@ class Companion::Manager
     @projects[name]
   end
 
-  def refresh_images : Nil
+  private def refresh_images : Nil
     Log.info { "Refreshing images" }
     @images = @docker.images
 
     @images.each do |image|
       @images_ids[image.id] = image.repo_tags
       image.repo_tags.try &.each do |tag|
-        @images_tags[tag].unshift(image.id)
+        if @images_tags[tag].size == 0 || @images_tags[tag][0] != image.id
+          @images_tags[tag].unshift(image.id)
+        end
       end
     end
 
     Log.info &.emit("Images refreshed", images: images.size)
   end
 
-  def refresh_networks : Nil
+  private def refresh_networks : Nil
     Log.info { "Refreshing networks" }
     @networks = @docker.networks
   end

@@ -44,6 +44,10 @@ class Companion::Docker::Compose::Service
       raise "You must provide an image name"
     end
 
+    if !@image.includes?(':')
+      @image = "#{@image}:latest"
+    end
+
     if restart = service.restart
       @restart = case restart
                  when "no"
