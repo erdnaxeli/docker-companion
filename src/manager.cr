@@ -5,6 +5,17 @@ require "./project"
 
 require "path"
 
+# Manage all docker operations.
+#
+# Some care must be taken for updates to be detected. At startup, the images
+# state is saved. You can then add project.
+#
+# When upping a project, missing images will be pulled, but not new ones, and
+# the images state will be refreshed.
+#
+# You should then run periodically `Companion::Manager#check_updates` which
+# pulls all images and yield `Companion::UpdateEvent` for each service that can
+# be updated.
 class Companion::Manager
   record(
     ImageState,
@@ -53,9 +64,8 @@ class Companion::Manager
 
   # Creates missing containers for the project *name*.
   #
-  # If the container are already there, it does not recreate them even if their
-  # config changed. It does not pull images neither, it must have been done with
-  # `#pull_images`.
+  # It pulls the image if needed. If the container are already there, it does
+  # not recreate them even if their config changed.
   def create(name : String) : Nil
     project = get_project(name)
     network_name, network_id = create_default_network(project)
@@ -67,6 +77,10 @@ class Companion::Manager
   end
 
   def create_container(project_name : String, service : Companion::Docker::Compose::Service) : String
+    if !@images.has_key?(service.image)
+      pull_image(service.image)
+    end
+
     container_name = get_container_name(project_name, service)
     options = Docker::Client::CreateContainerOptions.new
     options.image = service.image
@@ -133,6 +147,7 @@ class Companion::Manager
   def up(name : String)
     create(name)
     start(name)
+    refresh_images { }
   end
 
   # Creates and starts the service *service_name* container for project *project_name*.
@@ -151,7 +166,8 @@ class Companion::Manager
   #
   # The image name can contains a tag in the form "image:tag", and even a
   # registry in the form "regitry/image:tag".
-  def pull_image(image : String)
+  def pull_image(image : String) : Nil
+    Log.info &.emit("Pulling image", image: image)
     parts = image.split(":")
     if parts.size == 1
       @docker.pull_image(image) { }
@@ -161,7 +177,7 @@ class Companion::Manager
   end
 
   # Pulls the docker images for the project *name*.
-  def pull_images(name : String)
+  def pull_images(name : String) : Nil
     project = get_project(name)
     project.each_image { |image| pull_image(image) }
   end
@@ -183,26 +199,24 @@ class Companion::Manager
     end
   end
 
-  # This methods watch for any image update.
+  # Checks if there are images update.
   #
   # If an update is found, the block is called with an event indicating the
   # image name and the projects's containers concerned.
-  def watch_updates(&block : UpdateEvent ->) : Nil
-    loop do
-      @images.each_key do |image|
-        pull_image(image)
+  def check_updates(&block : UpdateEvent ->) : Nil
+    @images.each do |tag, image|
+      if image.services.size > 0
+        pull_image(tag)
       end
-      refresh_images do |tag|
-        @images[tag].services.each do |project, service|
-          yield UpdateEvent.new(
-            image: tag,
-            project: project,
-            service: service,
-          )
-        end
+    end
+    refresh_images do |tag|
+      @images[tag].services.each do |project, service|
+        yield UpdateEvent.new(
+          image: tag,
+          project: project,
+          service: service,
+        )
       end
-
-      sleep 30.seconds
     end
   end
 
@@ -338,9 +352,13 @@ class Companion::Manager
     @docker.images.each do |image|
       image.repo_tags.try &.each do |tag|
         image_state = @images[tag]
-        if image_state.ids_history[0]? != image.id
+        if (last_id = image_state.ids_history[0]?) != image.id
           image_state.ids_history.unshift(image.id)
-          yield tag
+
+          # We don't yield if it's the first time we see this image.
+          if !last_id.nil?
+            yield tag
+          end
         end
       end
     end
