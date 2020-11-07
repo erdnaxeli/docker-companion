@@ -28,6 +28,9 @@ module Companion::Docker::Client
   # Creates a network.
   abstract def create_network(options : CreateNetworkOptions) : CreateNetworkResponse
 
+  # Return a new client with the same configuration
+  abstract def clone : self.class
+
   # Get a container's id.
   #
   # Returns nil if the container is not found.
@@ -56,6 +59,10 @@ class Companion::Docker::Client::Local
 
   def initialize(@config = Config.new)
     @client = HTTP::Client.unix(@config.socket)
+  end
+
+  def clone
+    self.new(@config)
   end
 
   # Creates a new container and return its id.

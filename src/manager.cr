@@ -14,6 +14,8 @@ class Companion::Manager
   # A hash {image tag => [history of images ids]}
   @images_tags = Hash(String, Array(String)).new { |h, k| h[k] = Array(String).new }
   @projects = Hash(String, Project).new
+  # A hash {project_name => {network_name, network_id}}
+  @default_networks = Hash(String, Tuple(String, String)).new
 
   Log = Companion::Log.for(self)
 
@@ -48,51 +50,70 @@ class Companion::Manager
   # If the container are already there, it does not recreate them even if their
   # config changed. It does not pull images neither, it must have been done with
   # `#pull_images`.
-  def create(name : String)
+  def create(name : String) : Nil
     project = get_project(name)
     network_name, network_id = create_default_network(project)
+    @default_networks[name] = {network_name, network_id}
 
     project.each_service do |service|
-      container_name = get_container_name(name, service)
-      options = Docker::Client::CreateContainerOptions.new
-      options.image = service.image
-      options.labels = service.labels
-      service.env.try &.each { |k, v| options.env[k] = v }
-
-      add_ports(service, options)
-      add_volumes(service, options.host_config)
-      additional_networks = add_networks(
-        service,
-        options.networking_config.endpoints_config,
-        network_name,
-        network_id,
-      )
-
-      begin
-        response = @docker.create_container(options, container_name)
-      rescue Docker::Client::ConflictException
-        return
-      end
-
-      if container_id = response.id
-        additional_networks.each do |endpoint|
-          options = Docker::Client::ConnectNetworkOptions.new
-          options.container = container_id
-          options.endpoint_config = endpoint
-
-          @docker.connect_network(options)
-        end
-      end
+      create_container(name, service)
     end
   end
 
-  # Kiils and removes all containers for the project *name*.
-  def down(name : String)
+  def create_container(project_name : String, service : Companion::Docker::Compose::Service) : String
+    container_name = get_container_name(project_name, service)
+    options = Docker::Client::CreateContainerOptions.new
+    options.image = service.image
+    options.labels = service.labels
+    service.env.try &.each { |k, v| options.env[k] = v }
+
+    add_ports(service, options)
+    add_volumes(service, options.host_config)
+    additional_networks = add_networks(
+      project_name,
+      service,
+      options.networking_config.endpoints_config,
+    )
+
+    begin
+      response = @docker.create_container(options, container_name)
+    rescue Docker::Client::ConflictException
+      if id = @docker.get_container_id(container_name)
+        return id
+      else
+        raise "Error while creating the container: docker complains about a conflict but we can't found the conflicting container"
+      end
+    end
+
+    if container_id = response.id
+      additional_networks.each do |endpoint|
+        options = Docker::Client::ConnectNetworkOptions.new
+        options.container = container_id
+        options.endpoint_config = endpoint
+
+        @docker.connect_network(options)
+      end
+    else
+      raise "Error while creating container #{container_name}: #{response.message}"
+    end
+
+    container_id
+  end
+
+  # Kills and removes all containers for the project *name*.
+  def down(name : String) : Nil
     project = get_project(name)
     project.each_service do |service|
-      container_name = get_container_name(name, service)
-      if id = @docker.get_container_id(container_name)
-        @docker.remove_container(id)
+      remove_container(name, service)
+    end
+  end
+
+  # Kills and removes the service *service_name* container for the project *project_name*.
+  def down_service(project_name : String, service_name : String) : Nil
+    project = get_project(project_name)
+    project.each_service do |service|
+      if service.name == service_name
+        remove_container(project_name, service)
       end
     end
   end
@@ -107,6 +128,18 @@ class Companion::Manager
     pull_images(name)
     create(name)
     start(name)
+  end
+
+  # Creates and starts the service *service_name* container for project *project_name*.
+  #
+  # It does not pull the image.
+  def up_service(project_name : String, service_name : String) : Nil
+    get_project(project_name).each_service do |service|
+      if service.name == service_name
+        id = create_container(project_name, service)
+        @docker.start_container(id)
+      end
+    end
   end
 
   # Pull an image.
@@ -199,8 +232,10 @@ class Companion::Manager
   # As Docker allow to specify only one network at the container creation, the
   # other ones are returned in an array and the container must be connected to
   # them.
-  private def add_networks(service, endpoints_config, default_network_name, default_network_id)
+  private def add_networks(project_name, service, endpoints_config)
+    default_network_name, default_network_id = @default_networks[project_name]
     additional_networks = Array(Docker::Client::CreateContainerOptions::EndpointConfig).new
+
     if networks = service.networks
       networks.each do |network|
         endpoint_config = Docker::Client::CreateContainerOptions::EndpointConfig.new
@@ -338,5 +373,12 @@ class Companion::Manager
   private def refresh_networks : Nil
     Log.info { "Refreshing networks" }
     @networks = @docker.networks
+  end
+
+  private def remove_container(project_name, service) : Nil
+    container_name = get_container_name(project_name, service)
+    if id = @docker.get_container_id(container_name)
+      @docker.remove_container(id)
+    end
   end
 end

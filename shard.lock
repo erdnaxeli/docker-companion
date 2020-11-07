@@ -10,7 +10,7 @@ shards:
 
   parameters:
     git: https://github.com/erdnaxeli/crystal-parameters.git
-    version: 1.0.1
+    version: 1.0.2
 
   webmock:
     git: https://github.com/manastech/webmock.cr.git

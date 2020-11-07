@@ -9,6 +9,7 @@ require "dir"
 require "file"
 require "option_parser"
 require "path"
+require "time"
 require "yaml"
 
 module Companion
@@ -53,8 +54,8 @@ module Companion
     manager.watch_updates do |event|
       conn.send_message(
         config.matrix.notification_room,
-        %(A new image "#{event.image}" was pulled. To use it, run the command `update #{event.project}/#{event.container}`.),
-        %(A new image "#{event.image}" was pulled. To use it, run the command <code>update #{event.project}/#{event.container}</code>.)
+        %(A new image "#{event.image}" was pulled. To use it, run the command `update #{event.project} #{event.container}`.),
+        %(A new image "#{event.image}" was pulled. To use it, run the command <code>update #{event.project} #{event.container}</code>.)
       )
     end
 
@@ -134,6 +135,51 @@ module Companion
                 end
 
                 conn.send_message(event.room_id, msg)
+              end
+              parser.on("update", "update a project") do
+                parser.banner = "update PROJECT [SERVICES]"
+
+                parser.unknown_args do |args|
+                  if args.size > 0
+                    project = args.shift
+                    services = args
+
+                    if services.empty?
+                      conn.send_message(event.room_id, "You need to provide at least one service to update")
+                      next
+                    end
+
+                    services.each do |service|
+                      msg_id = ""
+                      begin
+                        elapsed_time = Time.measure do
+                          msg_id = conn.send_message(event.room_id, "Removing the container...")
+                          manager.down_service(project, service)
+                          conn.edit_message(event.room_id, msg_id, "Recreating the container...")
+                          manager.up_service(project, service)
+                        end
+                        time = if elapsed_time < 2.seconds
+                                 "#{elapsed_time.milliseconds}ms"
+                               else
+                                 "#{elapsed_time.seconds}s"
+                               end
+
+                        conn.edit_message(
+                          event.room_id,
+                          msg_id,
+                          "Service #{service} of project #{project} is up to date! (it tooks #{time})",
+                        )
+                      rescue ex
+                        puts ex.message
+                      end
+                    end
+                  else
+                    conn.send_message(event.room_id, "You need to provide a project")
+                  end
+                end
+              end
+              parser.on("-h", "--help", "show this help") do
+                conn.send_message(event.room_id, parser.to_s)
               end
               parser.invalid_option { }
               parser.unknown_args do |args|
