@@ -1,6 +1,7 @@
 # docker-companion
 
-A bad reimplementation of docker-compose that you control through Matrix.
+A bad reimplementation of docker-compose that manages your docker services and
+warns you about images updates over Matrix.
 
 > Insert here an awesome gif of some containers being controlled by speaking
 > to a Matrix bot.
@@ -20,6 +21,7 @@ You need a file named `config.yaml` in the folder you will run your companion.
 matrix:
   homeserver: the url of your homeserver
   access_token: an access token for the bot's account
+  notification_room: the id of a room where to receive updates notification
 users:
   - a list of
   - users allowed
@@ -38,6 +40,11 @@ For any directory containing a `docker-compose.yaml` file, it will read it,
 >
 > See below the naming part for more details.
 
+The companion will then try to pull new images every hours, and if there are
+any it will warn you.
+You can then restart the services with their new images with the command
+`update` (see below).
+
 ## Features
 
 This project tries to mimic docker-compose, so it will:
@@ -50,6 +57,7 @@ The currently available commands are:
 * `images`: list local docker images
 * `networks`: list docker networks
 * `projects`: list loaded projects
+* `update PROJECT [SERVICES]`: update a project services by dropping and recreating them
 * and of course `help`
 
 Docker-compose features supported:
@@ -62,7 +70,7 @@ Docker-compose features supported:
 
 Major docker-compose features not supported:
 * command and entrypoint
-* network (other than the default one)
+* creating networks (other than the default one)
 * build an image from a Dockerfile
 * named volumes (not bind mounts)
 * scaling and all docker swarm related things
@@ -90,19 +98,13 @@ the same time with the same project.
 
 ## Todo
 
-The goal of this project is to monitor your containers for you, and to warn you
-through Matrix. This means:
-* when a new image is available for a container
-* when a container fails
-
-Then the bot should offer some commands:
-* restart a container with the new image
-* rollback to a previous image (the companion will maintain an history of images
-  for a tag)
-* restart a container
-* show a container's logs
+* offer a command to rollback a container to a previous (local) image
+* commands to restart a container or show its logs
+* support building a docker image
+* warn when a container fails
 
 Maybe after that:
+* support cloning a git repository, watch for new commits, and build the image
 * do not destroy containers at boot, but warn the user for diffs
 * add projets directly from Matrix
 * edit projects from Matrix
