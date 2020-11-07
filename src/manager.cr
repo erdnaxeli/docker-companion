@@ -6,13 +6,15 @@ require "./project"
 require "path"
 
 class Companion::Manager
-  getter images = Array(Docker::Client::Image).new
+  record(
+    ImageState,
+    ids_history = Array(String).new,
+    services = Set(Tuple(String, String)).new
+  )
+
+  getter images = Hash(String, ImageState).new { |h, k| h[k] = ImageState.new }
   getter networks = Array(Docker::Client::Network).new
 
-  # A hash {image id => [images tags]}
-  @images_ids = Hash(String, Array(String)?).new
-  # A hash {image tag => [history of images ids]}
-  @images_tags = Hash(String, Array(String)).new { |h, k| h[k] = Array(String).new }
   @projects = Hash(String, Project).new
   # A hash {project_name => {network_name, network_id}}
   @default_networks = Hash(String, Tuple(String, String)).new
@@ -21,7 +23,7 @@ class Companion::Manager
 
   # Create an new Manager.
   def initialize(@docker : Docker::Client)
-    refresh_images
+    refresh_images { }
     refresh_networks
   end
 
@@ -38,10 +40,14 @@ class Companion::Manager
       raise "The projects #{name} already exists"
     end
 
-    @projects[name] = Project.new(name, compose)
+    @projects[name] = project = Project.new(name, compose)
 
     if !working_directory.nil?
-      @projects[name].fix_mounts(working_directory)
+      project.fix_mounts(working_directory)
+    end
+
+    project.each_service do |service|
+      @images[service.image].services << {name, service.name}
     end
   end
 
@@ -123,9 +129,8 @@ class Companion::Manager
     @projects.each_key
   end
 
-  # Pulls images, creates and starts containers for the project *name*.
+  # Creates and starts containers for the project *name*.
   def up(name : String)
-    pull_images(name)
     create(name)
     start(name)
   end
@@ -159,7 +164,6 @@ class Companion::Manager
   def pull_images(name : String)
     project = get_project(name)
     project.each_image { |image| pull_image(image) }
-    refresh_images
   end
 
   # Starts all the containers for the project *name*.
@@ -179,46 +183,21 @@ class Companion::Manager
     end
   end
 
-  record ImageState, image_id : String, services = Array(Tuple(String, String)).new
-
   # This methods watch for any image update.
   #
   # If an update is found, the block is called with an event indicating the
   # image name and the projects's containers concerned.
-  def watch_updates(&block : UpdateEvent ->)
-    state = Hash(String, ImageState).new do |h, k|
-      # we take the last known id
-      image_id = @images_tags[k][0]
-      h[k] = ImageState.new(image_id: image_id)
-    end
-
-    @projects.each do |name, project|
-      project.each_service do |service|
-        state[service.image].services << {name, service.name}
-      end
-    end
-
+  def watch_updates(&block : UpdateEvent ->) : Nil
     loop do
-      state.each_key do |image|
+      @images.each_key do |image|
         pull_image(image)
       end
-      refresh_images
-
-      state.each do |image_tag, image_state|
-        last_known_id = @images_tags[image_tag][0]
-        if image_state.image_id == last_known_id
-          next
-        end
-
-        image_state.services.each do |project, container|
+      refresh_images do |tag|
+        @images[tag].services.each do |project, service|
           yield UpdateEvent.new(
-            container: container,
-            image: image_tag,
+            image: tag,
             project: project,
-          )
-          state[image_tag] = ImageState.new(
-            image_id: last_known_id,
-            services: image_state.services,
+            service: service,
           )
         end
       end
@@ -356,13 +335,12 @@ class Companion::Manager
 
   private def refresh_images : Nil
     Log.info { "Refreshing images" }
-    @images = @docker.images
-
-    @images.each do |image|
-      @images_ids[image.id] = image.repo_tags
+    @docker.images.each do |image|
       image.repo_tags.try &.each do |tag|
-        if @images_tags[tag].size == 0 || @images_tags[tag][0] != image.id
-          @images_tags[tag].unshift(image.id)
+        image_state = @images[tag]
+        if image_state.ids_history[0]? != image.id
+          image_state.ids_history.unshift(image.id)
+          yield tag
         end
       end
     end

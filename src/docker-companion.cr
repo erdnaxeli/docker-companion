@@ -54,8 +54,8 @@ module Companion
     manager.watch_updates do |event|
       conn.send_message(
         config.matrix.notification_room,
-        %(A new image "#{event.image}" was pulled. To use it, run the command `update #{event.project} #{event.container}`.),
-        %(A new image "#{event.image}" was pulled. To use it, run the command <code>update #{event.project} #{event.container}</code>.)
+        %(A new image "#{event.image}" was pulled. To use it, run the command `update #{event.project} #{event.service}`.),
+        %(A new image "#{event.image}" was pulled. To use it, run the command <code>update #{event.project} #{event.service}</code>.)
       )
     end
 
@@ -124,7 +124,7 @@ module Companion
               end
               parser.on("images", "list images") do
                 msg = String.build do |str|
-                  str << "* " << manager.images.map { |i| %(#{i.id} #{i.repo_tags.try &.join(", ")}) }.join("\n* ")
+                  str << "* " << manager.images.map { |t, i| %(#{t} #{i.ids_history[0]?}) }.join("\n* ")
                 end
 
                 conn.send_message(event.room_id, msg)
