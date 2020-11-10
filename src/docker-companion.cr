@@ -56,8 +56,10 @@ module Companion
 
     update = Channel(Nil).new
     spawn do
-      sleep 1.hour
-      update.send nil
+      loop do
+        update.send nil
+        sleep 1.hour
+      end
     end
 
     loop do
