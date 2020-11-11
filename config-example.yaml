@@ -1,0 +1,9 @@
+matrix:
+  homeserver: https://your.homeserver.url
+  access_token: XXX
+  # Where to send notifications
+  notification_room: "some room's id"
+  # Users allowed to talk to the boot
+  users: 
+    - "@erdnaxeli:cervoi.se"
+log_level: info # currently ignored
