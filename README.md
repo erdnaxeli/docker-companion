@@ -22,11 +22,11 @@ matrix:
   homeserver: the url of your homeserver
   access_token: an access token for the bot's account
   notification_room: the id of a room where to receive updates notification
-users:
-  - a list of
-  - users allowed
-  - to talk to the bot
-  - in the form @username:server.net
+  users:
+    - a list of
+    - users allowed
+    - to talk to the bot
+    - in the form @username:server.net
 ```
 
 Then you can run `/path/to/docker-companion/bin/docker-companion`.
