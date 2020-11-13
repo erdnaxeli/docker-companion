@@ -29,6 +29,27 @@ class Companion::Bot
   private def exec_cmd(parameters, event)
     OptionParser.parse(parameters) do |parser|
       parser.banner = "COMMAND [OPTIONS]"
+      parser.on("down", "shutdown a project's services") do
+        parser.banner = "down PROJECT [SERVICES]"
+        parser.unknown_args do |args|
+          if args.size > 0
+            project = args.shift
+            services = args
+
+            if services.empty?
+              @conn.send_message(event.room_id, "You need to provide at least one service to shutdown")
+              next
+            end
+
+            services.each do |service|
+              @manager.down_service(project, service)
+              @conn.send_message(event.room_id, "Service #{service} of project #{project} is down")
+            end
+          else
+            @conn.send_message(event.room_id, "You need to provide a project")
+          end
+        end
+      end
       parser.on("projects", "list projects") do
         msg = String.build do |str|
           str << "* " << @manager.each_projects.join("\n* ")
