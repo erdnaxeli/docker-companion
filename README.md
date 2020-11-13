@@ -6,6 +6,8 @@ warns you about images updates over Matrix.
 > Insert here an awesome gif of some containers being controlled by speaking
 > to a Matrix bot.
 
+You can join the discussion on Matrix: [#docker-companion:cervoi.se](https://matrix.to/#/!YwHqPMwCupqCRcaJJa:cervoi.se?via=cervoi.se).
+
 ## Installation
 
 You need to have Crystal installed, see
