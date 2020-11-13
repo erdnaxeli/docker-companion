@@ -77,7 +77,7 @@ class Companion::Manager
   end
 
   def create_container(project_name : String, service : Companion::Docker::Compose::Service) : String
-    if !@images.has_key?(service.image)
+    if @images[service.image].ids_history.size == 0
       pull_image(service.image)
     end
 
