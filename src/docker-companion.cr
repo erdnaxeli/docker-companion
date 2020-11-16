@@ -51,7 +51,7 @@ module Companion
     manager = Manager.new(Docker::Client::Local.new)
     add_projects(manager)
 
-    matrix = Channel(Caridina::Events::Sync).new
+    matrix = Channel(Caridina::Responses::Sync).new
     conn.sync(matrix)
 
     bot = Bot.new(config.matrix.users, conn, manager)

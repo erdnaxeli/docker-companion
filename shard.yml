@@ -12,8 +12,9 @@ crystal: 0.35.0
 
 dependencies:
   caridina:
-    github: erdnaxeli/caridina
+    #github: erdnaxeli/caridina
     version: ~>0.2.0
+    path: ../caridina
   parameters:
     github: erdnaxeli/crystal-parameters
     version: ~>1.0.4
