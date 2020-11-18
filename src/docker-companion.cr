@@ -39,6 +39,18 @@ module Companion
   end
 
   def self.run : Nil
+    OptionParser.parse do |parser|
+      parser.banner = "#{PROGRAM_NAME} [OPTIONS]"
+      parser.on("-h", "--help", "show this help") do
+        puts parser
+        exit
+      end
+      parser.on("-V", "--version", "show the current version") do
+        puts VERSION
+        exit
+      end
+    end
+
     Log.info { "Read configuration" }
     config = read_config
 
