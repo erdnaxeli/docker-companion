@@ -122,9 +122,17 @@ class Companion::Manager
 
   # Kills and removes all containers for the project *name*.
   def down(name : String) : Nil
+    down(name) {}
+  end
+
+  # Kills and removes all containers for the project *name*.
+  #
+  # Yield each service name.
+  def down(name : String, &block : String ->) : Nil
     project = get_project(name)
     project.each_service do |service|
       remove_container(name, service)
+      yield service.name
     end
   end
 

@@ -43,13 +43,14 @@ class Companion::Bot
             services = args
 
             if services.empty?
-              @conn.send_message(room_id, "You need to provide at least one service to shutdown")
-              next
-            end
-
-            services.each do |service|
-              @manager.down_service(project, service)
-              @conn.send_message(room_id, "Service #{service} of project #{project} is down")
+              @manager.down(project) do |service|
+                @conn.send_message(room_id, "Service #{service} down")
+              end
+            else
+              services.each do |service|
+                @manager.down_service(project, service)
+                @conn.send_message(room_id, "Service #{service} of project #{project} is down")
+              end
             end
           else
             @conn.send_message(room_id, "You need to provide a project")
