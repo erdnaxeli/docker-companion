@@ -18,7 +18,7 @@ class Companion::Bot
     sync.rooms.try &.join.each do |room_id, room|
       room.timeline.events.each do |event|
         if event = event.as?(Caridina::Events::Message)
-          if message = event.content.as(Caridina::Events::Message::Text)
+          if message = event.content.as?(Caridina::Events::Message::Text)
             if event.sender != @conn.user_id && @users.includes? event.sender
               if parameters = Parameters.parse(message.body)
                 exec_cmd(parameters, room_id, event)
