@@ -46,6 +46,7 @@ class Companion::Bot
               @manager.down(project) do |service|
                 @conn.send_message(room_id, "Service #{service} down")
               end
+              @conn.send_message(room_id, "Project #{project} down")
             else
               services.each do |service|
                 @manager.down_service(project, service)
