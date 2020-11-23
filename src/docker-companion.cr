@@ -18,6 +18,8 @@ module Companion
 
   Log = ::Log.for(self)
 
+  record ProjectUpdate, images = Array(String).new, services = Array(String).new
+
   struct Config
     include YAML::Serializable
 
@@ -81,12 +83,26 @@ module Companion
       when sync = matrix.receive
         bot.exec(sync)
       when update.receive
+
+        projects_updates = Hash(String, ProjectUpdate).new { |h, k| h[k] = ProjectUpdate.new }
         manager.check_updates do |event|
-          conn.send_message(
-            config.matrix.notification_room,
-            %(A new image "#{event.image}" was pulled. To use it, run the command `update #{event.project} #{event.service}`.),
-            %(A new image "#{event.image}" was pulled. To use it, run the command <code>update #{event.project} #{event.service}</code>.)
-          )
+          projects_updates[event.project].images << event.image
+          projects_updates[event.project].services << event.service
+        end
+
+        projects_updates.each do |project, project_update|
+          images = project_update.images.join(", ")
+          services = project_update.images.join(" ")
+
+          if project_update.images.size > 1
+            msg = %(The new images #{images} were pulled. To use them, run the command `update #{project} #{services}`)
+            fmt_msg = %(The new images "#{images} were pulled. To use them, run the command <code>update #{project} #{services}</code>)
+          else
+            msg = %(A new image #{images} was pulled. To use it, run the command `update #{project} #{services}`)
+            fmt_msg = %(A new image #{images} was pulled. To use it, run the command <code>update #{project} #{services}</code>)
+          end
+
+          conn.send_message(config.matrix.notification_room, msg, fmt_msg)
         end
       end
     end
