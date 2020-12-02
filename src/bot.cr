@@ -8,13 +8,14 @@ class Companion::Bot
   def initialize(@users : Array(String), @conn : Caridina::Connection, @manager : Manager)
     @syncer = Caridina::Syncer.new
     @syncer.on(Caridina::Events::Message) do |event|
+      event = event.as(Caridina::Events::Message)
+      room_id = event.room_id.not_nil!
+      @conn.send_receipt(room_id, event.event_id)
+
       if @first_sync
         # Skip the first sync messages as it can contains messages already read.
         next
       end
-
-      event = event.as(Caridina::Events::Message)
-      room_id = event.room_id.not_nil!
 
       if event.sender != @conn.user_id && @users.includes?(event.sender) && (message = event.content.as?(Caridina::Events::Message::Text))
           if parameters = Parameters.parse(message.body)
