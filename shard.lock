@@ -6,7 +6,7 @@ shards:
 
   caridina:
     git: https://github.com/erdnaxeli/caridina.git
-    version: 0.3.1
+    version: 0.5.0
 
   parameters:
     git: https://github.com/erdnaxeli/crystal-parameters.git

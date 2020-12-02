@@ -1,38 +1,43 @@
+require "caridina/syncer"
+
 class Companion::Bot
   Log = Companion::Log.for(self)
 
   @first_sync = true
 
   def initialize(@users : Array(String), @conn : Caridina::Connection, @manager : Manager)
+    @syncer = Caridina::Syncer.new
+    @syncer.on(Caridina::Events::Message) do |event|
+      if @first_sync
+        # Skip the first sync messages as it can contains messages already read.
+        next
+      end
+
+      event = event.as(Caridina::Events::Message)
+      room_id = event.room_id.not_nil!
+
+      if event.sender != @conn.user_id && @users.includes?(event.sender) && (message = event.content.as?(Caridina::Events::Message::Text))
+          if parameters = Parameters.parse(message.body)
+            exec_cmd(parameters, event)
+          else
+            @conn.send_message(room_id, "Invalid command")
+          end
+        end
+    end
+    @syncer.on(Caridina::Events::StrippedState, ->follow_invites(Caridina::Events::Event))
   end
 
   def exec(sync : Caridina::Responses::Sync)
-    follow_invites(sync)
+    @syncer.process_response(sync)
 
     if @first_sync
-      # Skip the first sync messages as it can contains messages already read.
       @first_sync = false
-      return
-    end
-
-    sync.rooms.try &.join.each do |room_id, room|
-      room.timeline.events.each do |event|
-        if event = event.as?(Caridina::Events::Message)
-          if message = event.content.as?(Caridina::Events::Message::Text)
-            if event.sender != @conn.user_id && @users.includes? event.sender
-              if parameters = Parameters.parse(message.body)
-                exec_cmd(parameters, room_id, event)
-              else
-                @conn.send_message(room_id, "Invalid command")
-              end
-            end
-          end
-        end
-      end
     end
   end
 
-  private def exec_cmd(parameters, room_id, event)
+  private def exec_cmd(parameters, event)
+    room_id = event.room_id.not_nil!
+
     OptionParser.parse(parameters) do |parser|
       parser.banner = "COMMAND [OPTIONS]"
       parser.on("down", "shutdown a project's services") do
@@ -133,14 +138,19 @@ class Companion::Bot
     end
   end
 
-  private def follow_invites(sync)
-    sync.rooms.try &.invite.each do |room_id, _|
-      Log.info &.emit("Join room", room_id: room_id)
-      @conn.join(room_id)
-      @conn.send_message(
-        room_id,
-        "Hi! I am your new companion, here to help you manage your docker services. Try the 'help' command to begin."
-      )
+  private def follow_invites(event)
+    event = event.as(Caridina::Events::StrippedState)
+    room_id = event.room_id.not_nil!
+
+    if content = event.content.as?(Caridina::Events::Member::Content)
+      if content.membership == Caridina::Events::Member::Membership::Invite
+        Log.info &.emit("Join room", room_id: room_id)
+        @conn.join(room_id)
+        @conn.send_message(
+          room_id,
+          "Hi! I am your new companion, here to help you manage your docker services. Try the 'help' command to begin."
+        )
+      end
     end
   end
 end
