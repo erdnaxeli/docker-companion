@@ -19,7 +19,10 @@ class Companion::Bot
 
       if event.sender != @conn.user_id && @users.includes?(event.sender) && (message = event.content.as?(Caridina::Events::Message::Text))
           if parameters = Parameters.parse(message.body)
-            exec_cmd(parameters, event)
+            # The typing notification act as a loading spinner.
+            @conn.typing(room_id) do
+             exec_cmd(parameters, event)
+            end
           else
             @conn.send_message(room_id, "Invalid command")
           end
