@@ -18,15 +18,15 @@ class Companion::Bot
       end
 
       if event.sender != @conn.user_id && @users.includes?(event.sender) && (message = event.content.as?(Caridina::Events::Message::Text))
-          if parameters = Parameters.parse(message.body)
-            # The typing notification act as a loading spinner.
-            @conn.typing(room_id) do
-             exec_cmd(parameters, event)
-            end
-          else
-            @conn.send_message(room_id, "Invalid command")
+        if parameters = Parameters.parse(message.body)
+          # The typing notification act as a loading spinner.
+          @conn.typing(room_id) do
+            exec_cmd(parameters, event)
           end
+        else
+          @conn.send_message(room_id, "Invalid command")
         end
+      end
     end
     @syncer.on(Caridina::Events::StrippedState, ->follow_invites(Caridina::Events::Event))
   end

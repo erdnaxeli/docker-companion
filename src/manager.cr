@@ -122,7 +122,7 @@ class Companion::Manager
 
   # Kills and removes all containers for the project *name*.
   def down(name : String) : Nil
-    down(name) {}
+    down(name) { }
   end
 
   # Kills and removes all containers for the project *name*.

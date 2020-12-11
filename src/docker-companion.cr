@@ -83,7 +83,6 @@ module Companion
       when sync = matrix.receive
         bot.exec(sync)
       when update.receive
-
         projects_updates = Hash(String, ProjectUpdate).new { |h, k| h[k] = ProjectUpdate.new }
         manager.check_updates do |event|
           projects_updates[event.project].images << event.image
@@ -92,7 +91,7 @@ module Companion
 
         projects_updates.each do |project, project_update|
           images = project_update.images.join(", ")
-          services = project_update.images.join(" ")
+          services = project_update.services.join(" ")
 
           if project_update.images.size > 1
             msg = %(The new images #{images} were pulled. To use them, run the command `update #{project} #{services}`)
