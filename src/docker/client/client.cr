@@ -1,11 +1,11 @@
 require "json"
+require "socket"
 
 require "./container"
 require "./exceptions"
 require "./image"
 require "./network"
 require "../../macro"
-require "../../core_ext/http/client"
 
 module Companion::Docker::Client
   struct CreateContainerResponse
@@ -33,6 +33,9 @@ module Companion::Docker::Client
   # Returns nil if the container is not found.
   abstract def get_container_id(name : String) : String?
 
+  # Get a container's logs
+  abstract def get_logs(id : String, stdout : Bool, stderr : Bool, lines : Int32) : String
+
   # Get images.
   abstract def images : Array(Image)
 
@@ -55,13 +58,13 @@ class Companion::Docker::Client::Local
   end
 
   def initialize(@config = Config.new)
-    @client = HTTP::Client.unix(@config.socket)
+    @client = HTTP::Client.new(UNIXSocket.new(@config.socket))
   end
 
   # Creates a new container and return its id.
   def create_container(options : CreateContainerOptions, name : String? = nil) : CreateContainerResponse
     route = name ? "/containers/create?name=#{name}" : "/containers/create"
-    raw_response = @client.post(route, headers: HTTP::Headers{"Content-Type" => "application/json"}, body: options.to_json)
+    raw_response = @client.post("http://localhost#{route}", headers: HTTP::Headers{"Content-Type" => "application/json"}, body: options.to_json)
     response = CreateContainerResponse.from_json(raw_response.body)
 
     if !raw_response.success?
@@ -77,14 +80,14 @@ class Companion::Docker::Client::Local
   end
 
   def create_network(options : CreateNetworkOptions) : CreateNetworkResponse
-    raw_response = @client.post("/networks/create", headers: HTTP::Headers{"Content-Type" => "application/json"}, body: options.to_json)
+    raw_response = @client.post("http://localhost/networks/create", headers: HTTP::Headers{"Content-Type" => "application/json"}, body: options.to_json)
     CreateNetworkResponse.from_json(raw_response.body)
   end
 
   # Create an image and returns its id
   def create_image(from_image : String, tag : String)
     params = HTTP::Params.encode({fromImage: from_image, tag: tag})
-    @client.post("/images/create?#{params}") do |response|
+    @client.post("http://localhost/images/create?#{params}") do |response|
       response.body_io.each_line do |line|
         yield CreateImageResponse.from_json(line)
       end
@@ -94,7 +97,7 @@ class Companion::Docker::Client::Local
   # Connect a container to a network
   def connect_network(options : ConnectNetworkOptions) : Nil
     response = @client.post(
-      "/networks/#{options.endpoint_config.network_id}/connect",
+      "http://localhost/networks/#{options.endpoint_config.network_id}/connect",
       headers: HTTP::Headers{"Content-Type" => "application/json"},
       body: options.to_json
     )
@@ -124,13 +127,18 @@ class Companion::Docker::Client::Local
     end
   end
 
+  def get_logs(id : String, stdout : Bool, stderr : Bool, lines : Int32) : String
+    response = @client.get("http://localhost/containers/#{id}/logs?stdout=#{stdout}&stderr={stderr}&tail=#{lines}")
+    response.body.lines.map { |l| String.new(l.to_slice[8...]) }.join("\n")
+  end
+
   def images : Array(Image)
-    response = @client.get("/images/json")
+    response = @client.get("http://localhost/images/json")
     Array(Image).from_json(response.body)
   end
 
   def networks : Array(Network)
-    response = @client.get("/networks")
+    response = @client.get("http://localhost/networks")
     Array(Network).from_json(response.body)
   end
 
@@ -143,11 +151,11 @@ class Companion::Docker::Client::Local
   #
   # If the container is running, it will be killed.
   def remove_container(id : String) : Nil
-    @client.delete("/containers/#{id}?force=true")
+    @client.delete("http://localhost/containers/#{id}?force=true")
   end
 
   # Starts a container.
   def start_container(id : String) : Nil
-    @client.post("/containers/#{id}/start")
+    @client.post("http://localhost/containers/#{id}/start")
   end
 end

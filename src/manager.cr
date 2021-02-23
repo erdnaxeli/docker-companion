@@ -151,6 +151,22 @@ class Companion::Manager
     @projects.each_key
   end
 
+  # Returns a project container's logs
+  def get_logs(project_name : String, name : String) : String
+    get_project(project_name).each_service do |service|
+      if service.name == name
+        container_name = get_container_name(project_name, service)
+        if id = @docker.get_container_id(container_name)
+          return @docker.get_logs(id, stdout: true, stderr: true, lines: 15)
+        else
+          raise "The service #{name} is not created yet"
+        end
+      end
+    end
+
+    raise "Unknown service #{name}"
+  end
+
   # Creates and starts containers for the project *name*.
   def up(name : String)
     create(name)

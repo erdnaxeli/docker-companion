@@ -81,6 +81,24 @@ class Companion::Bot
 
         @conn.send_message(room_id, msg)
       end
+      parser.on("logs", "get logs") do
+        parser.banner = "logs PROJECT SERVICE"
+        parser.unknown_args do |args|
+          if args.size == 2
+            project = args.shift
+            name = args.shift
+            begin
+              logs = @manager.get_logs(project, name)
+            rescue ex
+              @conn.send_message(room_id, ex.to_s)
+            else
+              @conn.send_message(room_id, logs, "<pre><code>#{logs}</code></pre>")
+            end
+          else
+            @conn.send_message(room_id, parser.to_s)
+          end
+        end
+      end
       parser.on("networks", "list networks") do
         msg = String.build do |str|
           str << "* " << @manager.networks.map { |n| %(#{n.name} #{n.id}) }.join("\n* ")
@@ -143,7 +161,7 @@ class Companion::Bot
   end
 
   private def follow_invites(event)
-    event = event.as(Caridina::Events::StrippedState)
+    event = event.as(Caridina::Events::StrippedMember)
     room_id = event.room_id.not_nil!
 
     if content = event.content.as?(Caridina::Events::Member::Content)
