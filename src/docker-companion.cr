@@ -14,7 +14,7 @@ require "time"
 require "yaml"
 
 module Companion
-  VERSION = "0.1.0"
+  VERSION = "0.4.0"
 
   Log = ::Log.for(self)
 
@@ -57,7 +57,7 @@ module Companion
     config = read_config
 
     Log.info { "Connecting to Matrix" }
-    conn = Caridina::ConnectionImpl.new(
+    conn = Caridina::Connection.new(
       config.matrix.homeserver,
       config.matrix.access_token,
     )
@@ -127,7 +127,7 @@ module Companion
       # As we don't know (yet) if the currently running containers are correctly
       # configured, we just shut them down and create new ones.
       #
-      # TODO: do that in a better way
+      # TODO: do that in a better way
       manager.down(name)
       manager.up(name)
     end

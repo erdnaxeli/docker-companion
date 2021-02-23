@@ -1,19 +1,19 @@
 name: docker-companion
-version: 0.1.0
+version: 0.4.0
 
 authors:
-  - your-name-here <your-email-here>
+  - Alexandre Morignot <erdnaxeli@cervoi.se>
 
 targets:
   docker-companion:
     main: src/main.cr
 
-crystal: 0.35.0
+crystal: 0.36.1
 
 dependencies:
   caridina:
     github: erdnaxeli/caridina
-    version: ~>0.7.0
+    version: ~>0.10.2
   parameters:
     github: erdnaxeli/crystal-parameters
     version: ~>1.0.4
