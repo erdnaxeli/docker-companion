@@ -79,6 +79,14 @@ module Companion::Commands
       conn.send_message(room_id, ProjectsCommand.help("projects"))
     in UpdateCommand::Help
       conn.send_message(room_id, UpdateCommand.help("update"))
+    in Command
+      dispatch_command(conn, manager, room_id, command)
+    end
+  end
+
+  def self.dispatch_command(conn : Caridina::Connection, manager : Manager, room_id : String,
+                            command)
+    case command
     in DownCommand
       Down.run(conn, manager, room_id, command)
     in ImagesCommand

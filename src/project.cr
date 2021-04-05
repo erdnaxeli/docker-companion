@@ -22,7 +22,7 @@ class Companion::Project
   # Converts relative paths to absolute paths in bind mounts.
   def fix_mounts(working_directory : Path)
     each_service do |service|
-      service.volumes.each { |v| v.fix_local_source(working_directory) }
+      service.volumes.each &.fix_local_source(working_directory)
     end
   end
 end
