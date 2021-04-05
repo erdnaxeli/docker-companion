@@ -41,6 +41,10 @@ class FakeDockerClient
   def get_container_id(name) : String?
   end
 
+  def get_logs(id : String, stdout : Bool, stderr : Bool, lines : Int32) : String
+    "log"
+  end
+
   def images : Array(Image)
     Array(Image).new
   end
