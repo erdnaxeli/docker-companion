@@ -7,7 +7,7 @@ describe Companion::Docker::Client::Local do
     client = Companion::Docker::Client::Local.new
 
     WebMock.wrap do
-      WebMock.stub(:get, "localhost/containers/json?all=true").to_return(
+      WebMock.stub(:get, "/containers/json?all=true").to_return(
         body: CONTAINERS_JSON
       )
 
@@ -20,7 +20,7 @@ describe Companion::Docker::Client::Local do
     client = Companion::Docker::Client::Local.new
 
     WebMock.wrap do
-      WebMock.stub(:get, "localhost/images/json").to_return(
+      WebMock.stub(:get, "/images/json").to_return(
         body: IMAGES_JSON
       )
 
