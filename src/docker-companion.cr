@@ -14,7 +14,7 @@ require "time"
 require "yaml"
 
 module Companion
-  VERSION = "0.4.0"
+  VERSION = "0.5.0"
 
   Log = ::Log.for(self)
 
