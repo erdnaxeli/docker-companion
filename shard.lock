@@ -10,7 +10,7 @@ shards:
 
   clip:
     git: https://github.com/erdnaxeli/clip.git
-    version: 0.2.1
+    version: 0.2.4
 
   parameters:
     git: https://github.com/erdnaxeli/crystal-parameters.git

@@ -48,8 +48,14 @@ class Companion::Bot
       command = Commands::Command.parse(parameters)
     rescue ex : Clip::Error
       @conn.send_message(room_id, ex.to_s)
+      return
+    end
+
+    case command
+    when Clip::Mapper::Help
+      @conn.send_message(room_id, command.help(nil))
     else
-      Commands.dispatch(@conn, @manager, room_id, command)
+      command.run(@conn, @manager, room_id)
     end
   end
 
