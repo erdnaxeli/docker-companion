@@ -70,39 +70,32 @@ module Companion
 
     bot = Bot.new(config.matrix.users, conn, manager)
 
-    update = Channel(Nil).new
-    spawn do
-      loop do
-        update.send nil
-        sleep 1.hour
+    Marmot.on(matrix) do |task|
+      if sync = task.as(Marmot::OnChannelTask)
+        bot.exec(sync)
       end
     end
 
-    loop do
-      select
-      when sync = matrix.receive
-        bot.exec(sync)
-      when update.receive
-        projects_updates = Hash(String, ProjectUpdate).new { |h, k| h[k] = ProjectUpdate.new }
-        manager.check_updates do |event|
-          projects_updates[event.project].images << event.image
-          projects_updates[event.project].services << event.service
+    Marmot.every(1.hour) do
+      projects_updates = Hash(String, ProjectUpdate).new { |h, k| h[k] = ProjectUpdate.new }
+      manager.check_updates do |event|
+        projects_updates[event.project].images << event.image
+        projects_updates[event.project].services << event.service
+      end
+
+      projects_updates.each do |project, project_update|
+        images = project_update.images.join(", ")
+        services = project_update.services.join(" ")
+
+        if project_update.images.size > 1
+          msg = %(The new images #{images} were pulled. To use them, run the command `update #{project} #{services}`)
+          fmt_msg = %(The new images "#{images} were pulled. To use them, run the command <code>update #{project} #{services}</code>)
+        else
+          msg = %(A new image #{images} was pulled. To use it, run the command `update #{project} #{services}`)
+          fmt_msg = %(A new image #{images} was pulled. To use it, run the command <code>update #{project} #{services}</code>)
         end
 
-        projects_updates.each do |project, project_update|
-          images = project_update.images.join(", ")
-          services = project_update.services.join(" ")
-
-          if project_update.images.size > 1
-            msg = %(The new images #{images} were pulled. To use them, run the command `update #{project} #{services}`)
-            fmt_msg = %(The new images "#{images} were pulled. To use them, run the command <code>update #{project} #{services}</code>)
-          else
-            msg = %(A new image #{images} was pulled. To use it, run the command `update #{project} #{services}`)
-            fmt_msg = %(A new image #{images} was pulled. To use it, run the command <code>update #{project} #{services}</code>)
-          end
-
-          conn.send_message(config.matrix.notification_room, msg, fmt_msg)
-        end
+        conn.send_message(config.matrix.notification_room, msg, fmt_msg)
       end
     end
   end

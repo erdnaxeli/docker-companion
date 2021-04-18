@@ -12,6 +12,10 @@ shards:
     git: https://github.com/erdnaxeli/clip.git
     version: 0.2.4
 
+  marmot:
+    git: https://github.com/erdnaxeli/marmot.git
+    version: 0.4.0
+
   parameters:
     git: https://github.com/erdnaxeli/crystal-parameters.git
     version: 1.0.5
