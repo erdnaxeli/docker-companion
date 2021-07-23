@@ -5,6 +5,7 @@ require "./manager"
 
 require "caridina"
 require "parameters"
+require "marmot"
 
 require "dir"
 require "file"
@@ -71,7 +72,7 @@ module Companion
     bot = Bot.new(config.matrix.users, conn, manager)
 
     Marmot.on(matrix) do |task|
-      if sync = task.as(Marmot::OnChannelTask)
+      if sync = task.as(Marmot::OnChannelTask).value
         bot.exec(sync)
       end
     end
@@ -98,6 +99,8 @@ module Companion
         conn.send_message(config.matrix.notification_room, msg, fmt_msg)
       end
     end
+
+    Marmot.run
   end
 
   def self.add_projects(manager : Manager) : Nil
