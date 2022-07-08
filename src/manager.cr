@@ -120,6 +120,9 @@ class Companion::Manager
     container_id
   end
 
+  def docker=(@docker : Docker::Client)
+  end
+
   # Kills and removes all containers for the project *name*.
   def down(name : String) : Nil
     down(name) { }

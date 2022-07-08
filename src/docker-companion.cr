@@ -97,6 +97,10 @@ module Companion
         end
 
         conn.send_message(config.matrix.notification_room, msg, fmt_msg)
+      rescue ex : Exception
+        conn.send_message(config.matrix.notification_room, "Error while checking update: #{ex}")
+        # We got an error, try to use a new docker client
+        manager.docker = Docker::Client::Local.new
       end
     end
 
