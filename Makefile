@@ -15,7 +15,7 @@ run:
 	crystal run src/main.cr
 
 static:
-	docker run --rm -it -v ${PWD}:/workspace -w /workspace crystallang/crystal:1.0.0-alpine ./build.sh
+	docker run --rm -it -v ${PWD}:/workspace -w /workspace crystallang/crystal:1.5.0-alpine ./build.sh
 
 test:
 	crystal spec  --error-trace

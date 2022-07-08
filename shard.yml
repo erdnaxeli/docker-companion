@@ -8,7 +8,7 @@ targets:
   docker-companion:
     main: src/main.cr
 
-crystal: 1.0.0
+crystal: 1.5.0
 
 dependencies:
   caridina:
