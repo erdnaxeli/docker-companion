@@ -102,7 +102,7 @@ describe Companion::Docker::Client::CreateContainerOptions::HostConfig::RestartP
       Companion::Docker::Client::CreateContainerOptions::HostConfig::RestartPolicy::Name::No.to_json(json)
     end
 
-    str.should eq (%("no"))
+    str.should eq(%("no"))
   end
 
   it "serializes Always to json" do
@@ -110,7 +110,7 @@ describe Companion::Docker::Client::CreateContainerOptions::HostConfig::RestartP
       Companion::Docker::Client::CreateContainerOptions::HostConfig::RestartPolicy::Name::Always.to_json(json)
     end
 
-    str.should eq (%("always"))
+    str.should eq(%("always"))
   end
 
   it "serializes OnFailure to json" do
@@ -118,7 +118,7 @@ describe Companion::Docker::Client::CreateContainerOptions::HostConfig::RestartP
       Companion::Docker::Client::CreateContainerOptions::HostConfig::RestartPolicy::Name::OnFailure.to_json(json)
     end
 
-    str.should eq (%("on-failure"))
+    str.should eq(%("on-failure"))
   end
 
   it "serializes UnlessStopped to json" do
@@ -126,6 +126,6 @@ describe Companion::Docker::Client::CreateContainerOptions::HostConfig::RestartP
       Companion::Docker::Client::CreateContainerOptions::HostConfig::RestartPolicy::Name::UnlessStopped.to_json(json)
     end
 
-    str.should eq (%("unless-stopped"))
+    str.should eq(%("unless-stopped"))
   end
 end

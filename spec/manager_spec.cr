@@ -79,11 +79,11 @@ describe Companion::Manager do
     # Test first container
 
     call = DOCKER.create_container_calls[0]
-    call[:name].should eq ("not_a_test")
+    call[:name].should eq("not_a_test")
     options = call[:options]
     options.image.should eq("bash:latest")
     options.env.should eq({"PASSWORD" => "secretword"})
-    options.labels.should eq (
+    options.labels.should eq(
       {
         "traefik.http.routers.test.entrypoints"      => "https",
         "traefik.http.routers.test.tls.certresolver" => "letsencrypt",
