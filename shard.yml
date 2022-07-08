@@ -13,7 +13,7 @@ crystal: 1.5.0
 dependencies:
   caridina:
     github: erdnaxeli/caridina
-    version: ~>0.10.4
+    version: ~>0.10.6
   clip:
     github: erdnaxeli/clip
     version: ~>0.2.0

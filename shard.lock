@@ -6,7 +6,7 @@ shards:
 
   caridina:
     git: https://github.com/erdnaxeli/caridina.git
-    version: 0.10.5
+    version: 0.10.6
 
   clip:
     git: https://github.com/erdnaxeli/clip.git
